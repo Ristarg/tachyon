@@ -1,0 +1,6 @@
+[package]
+name = "tachyon"
+version = "0.1.0"
+authors = ["Ristarg <a.filippov@protonmail.com>"]
+
+[dependencies]
