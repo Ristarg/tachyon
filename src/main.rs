@@ -5,7 +5,7 @@ enum Token {
     PlusSign,
     OpenBracket,
     CloseBracket,
-    Space
+    Space,
 }
 
 struct SourceReader<'a> {
@@ -17,7 +17,7 @@ impl<'a> SourceReader<'a> {
     fn new(source: &str) -> SourceReader {
         SourceReader {
             source: source.as_bytes(),
-            idx: 0
+            idx: 0,
         }
     }
 
@@ -35,15 +35,57 @@ impl<'a> SourceReader<'a> {
         self.idx += 1;
         token
     }
+
+    fn expect_token(&mut self, token_kind: Token) {
+        let token = self.next_token();
+        if token != token_kind {
+            panic!(
+                "
+            Expected token: \"{:?}\"
+            Got instead: \"{:?}\"
+            ",
+                token_kind, token
+            );
+        }
+    }
+
+    fn expect_number(&mut self) -> u8 {
+        let token = self.next_token();
+        if let Token::Int(num) = token {
+            num
+        } else {
+            panic!(
+                "
+            Expected token: Int
+            Got instead: \"{:?}\"
+            ",
+                token
+            );
+        }
+    }
 }
 
 fn main() {
     let mut rdr = SourceReader::new("(+ 1 2)");
 
-    while rdr.idx < rdr.source.len() {
-        let token = rdr.next_token();
-        println!("Token: {:?}", token);
-    }
+    rdr.expect_token(Token::OpenBracket);
+    println!("Got open bracket");
+
+    rdr.expect_token(Token::PlusSign);
+    println!("Got plus sign");
+
+    rdr.expect_token(Token::Space);
+    let left = rdr.expect_number();
+    println!("Got left operand: {}", left);
+
+    rdr.expect_token(Token::Space);
+    let right = rdr.expect_number();
+    println!("Got right operand: {}", right);
+
+    rdr.expect_token(Token::CloseBracket);
+    println!("Got close bracket");
+
+    println!("Result is: {}", left + right);
 }
 
 #[test]
@@ -74,4 +116,16 @@ fn test_lexer_singletons() {
 fn test_lexer_unknown_characters() {
     assert_eq!(SourceReader::new("a").next_token(), Token::Unknown);
     assert_eq!(SourceReader::new("$").next_token(), Token::Unknown);
+}
+
+#[test]
+fn test_lexer_expressions() {
+    let mut rdr = SourceReader::new("(+ 1 2)");
+    assert_eq!(rdr.next_token(), Token::OpenBracket);
+    assert_eq!(rdr.next_token(), Token::PlusSign);
+    assert_eq!(rdr.next_token(), Token::Space);
+    assert_eq!(rdr.next_token(), Token::Int(1));
+    assert_eq!(rdr.next_token(), Token::Space);
+    assert_eq!(rdr.next_token(), Token::Int(2));
+    assert_eq!(rdr.next_token(), Token::CloseBracket);
 }
