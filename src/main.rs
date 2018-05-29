@@ -2,14 +2,22 @@
 enum Token {
     Unknown,
     Int(u8),
-    PlusSign,
+    Plus,
+    Asterisk,
     OpenParenthesis,
     CloseParenthesis,
     Whitespace,
 }
 
 #[derive(Debug, PartialEq)]
+enum Operator {
+    Add,
+    Multiply
+}
+
+#[derive(Debug, PartialEq)]
 struct Expr {
+    op: Operator,
     left: u8,
     right: u8,
 }
@@ -41,7 +49,8 @@ impl<'a> Tokenizer<'a> {
             let cur_char = self.source[self.idx];
             let token = match cur_char {
                 b'0'...b'9' => Token::Int(cur_char - b'0'),
-                b'+' => Token::PlusSign,
+                b'+' => Token::Plus,
+                b'*' => Token::Asterisk,
                 b'(' => Token::OpenParenthesis,
                 b')' => Token::CloseParenthesis,
                 b' ' => Token::Whitespace,
@@ -98,17 +107,36 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    fn expect_operator(&mut self) -> Operator {
+        //TODO: since this is a lisp, make hardcoded operators into function names for lookup
+        self.skip_whitespace();
+        let token = self.next_token();
+        match token {
+            Token::Plus => Operator::Add,
+            Token::Asterisk => Operator::Multiply,
+            _ => {
+                panic!(
+                    "
+            Expected token: \"Plus\" | \"Asterisk\"
+            Got instead: \"{:?}\"
+            ",
+                    token
+                );
+            }
+        }
+    }
+
     fn parse_expression(&mut self) -> Expr {
         // FIXME: parse method on the Tokenizer?
         self.expect_token(Token::OpenParenthesis);
-        self.expect_token(Token::PlusSign);
+        let op = self.expect_operator();
         self.expect_token(Token::Whitespace);
         let left = self.expect_number();
         self.expect_token(Token::Whitespace);
         let right = self.expect_number();
         self.expect_token(Token::CloseParenthesis);
 
-        Expr { left, right }
+        Expr { op, left, right }
     }
 }
 
@@ -127,8 +155,8 @@ fn main() {
             let res = eval(&e);
 
             println!(
-                "Evaluated expression: (+ {} {})\nResult: {}",
-                e.left, e.right, res
+                "Evaluated expression: ({:?} {} {})\nResult: {}",
+                e.op, e.left, e.right, res
             );
         }
         input_buf.clear();
@@ -136,7 +164,10 @@ fn main() {
 }
 
 fn eval(expr: &Expr) -> u8 {
-    expr.left + expr.right
+    match expr.op {
+        Operator::Add => expr.left + expr.right,
+        Operator::Multiply => expr.left * expr.right
+    }
 }
 
 // *********
@@ -161,7 +192,8 @@ fn test_lexer_integers() {
 
 #[test]
 fn test_lexer_singletons() {
-    assert_eq!(Tokenizer::new("+").next_token(), Token::PlusSign);
+    assert_eq!(Tokenizer::new("+").next_token(), Token::Plus);
+    assert_eq!(Tokenizer::new("*").next_token(), Token::Asterisk);
     assert_eq!(Tokenizer::new("(").next_token(), Token::OpenParenthesis);
     assert_eq!(Tokenizer::new(")").next_token(), Token::CloseParenthesis);
     assert_eq!(Tokenizer::new(" ").next_token(), Token::Whitespace);
@@ -174,27 +206,44 @@ fn test_lexer_unknown_characters() {
 }
 
 #[test]
-fn test_lexer_expression() {
+fn test_lexer_expressions() {
     let mut rdr = Tokenizer::new("(+ 1 2)");
     assert_eq!(rdr.next_token(), Token::OpenParenthesis);
-    assert_eq!(rdr.next_token(), Token::PlusSign);
+    assert_eq!(rdr.next_token(), Token::Plus);
     assert_eq!(rdr.next_token(), Token::Whitespace);
     assert_eq!(rdr.next_token(), Token::Int(1));
     assert_eq!(rdr.next_token(), Token::Whitespace);
     assert_eq!(rdr.next_token(), Token::Int(2));
     assert_eq!(rdr.next_token(), Token::CloseParenthesis);
+
+    let mut rdr = Tokenizer::new("(* 3 4)");
+    assert_eq!(rdr.next_token(), Token::OpenParenthesis);
+    assert_eq!(rdr.next_token(), Token::Asterisk);
+    assert_eq!(rdr.next_token(), Token::Whitespace);
+    assert_eq!(rdr.next_token(), Token::Int(3));
+    assert_eq!(rdr.next_token(), Token::Whitespace);
+    assert_eq!(rdr.next_token(), Token::Int(4));
+    assert_eq!(rdr.next_token(), Token::CloseParenthesis);
 }
 
 #[test]
-fn test_parser_expression() {
+fn test_parser_expressions() {
     let mut rdr = Tokenizer::new("(+ 1 2)");
     let e = rdr.parse_expression();
-    assert_eq!(e, Expr { left: 1, right: 2 });
+    assert_eq!(e, Expr { op: Operator::Add, left: 1, right: 2 });
+
+    let mut rdr = Tokenizer::new("(* 3 4)");
+    let e = rdr.parse_expression();
+    assert_eq!(e, Expr { op: Operator::Multiply, left: 3, right: 4 });
 }
 
 #[test]
 fn test_eval() {
-    assert_eq!(eval(&Expr { left: 3, right: 5 }), 8);
-    assert_eq!(eval(&Expr { left: 9, right: 0 }), 9);
-    assert_eq!(eval(&Expr { left: 4, right: 1 }), 5);
+    assert_eq!(eval(&Expr { op: Operator::Add, left: 9, right: 0 }), 9);
+    assert_eq!(eval(&Expr { op: Operator::Add, left: 4, right: 1 }), 5);
+    assert_eq!(eval(&Expr { op: Operator::Add, left: 3, right: 5 }), 8);
+
+    assert_eq!(eval(&Expr { op: Operator::Multiply, left: 4, right: 1 }), 4);
+    assert_eq!(eval(&Expr { op: Operator::Multiply, left: 3, right: 5 }), 15);
+    assert_eq!(eval(&Expr { op: Operator::Multiply, left: 9, right: 0 }), 0);
 }
