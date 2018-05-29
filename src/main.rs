@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum Token {
     Unknown,
     Int(u8),
@@ -17,6 +17,8 @@ struct Expr {
 struct Tokenizer<'a> {
     source: &'a [u8],
     idx: usize,
+    last_token: Token,
+    rewind: bool,
 }
 
 impl<'a> Tokenizer<'a> {
@@ -24,25 +26,50 @@ impl<'a> Tokenizer<'a> {
         Tokenizer {
             source: source.as_bytes(),
             idx: 0,
+            last_token: Token::Unknown,
+            rewind: false,
         }
     }
 
     fn next_token(&mut self) -> Token {
-        let cur_char = self.source[self.idx];
-        let token = match cur_char {
-            b'0'...b'9' => Token::Int(cur_char - b'0'),
-            b'+' => Token::PlusSign,
-            b'(' => Token::OpenParenthesis,
-            b')' => Token::CloseParenthesis,
-            b' ' => Token::Whitespace,
-            _ => Token::Unknown,
-        };
+        if self.rewind {
+            let out = self.last_token.clone();
+            self.rewind = false;
+            self.last_token = Token::Unknown;
+            out
+        } else {
+            let cur_char = self.source[self.idx];
+            let token = match cur_char {
+                b'0'...b'9' => Token::Int(cur_char - b'0'),
+                b'+' => Token::PlusSign,
+                b'(' => Token::OpenParenthesis,
+                b')' => Token::CloseParenthesis,
+                b' ' => Token::Whitespace,
+                _ => Token::Unknown,
+            };
 
-        self.idx += 1;
-        token
+            self.idx += 1;
+            self.last_token = token.clone();
+            token
+        }
+    }
+
+    fn rewind(&mut self) {
+        self.rewind = true;
+    }
+
+    fn skip_whitespace(&mut self) {
+        let mut token = self.next_token();
+        while token == Token::Whitespace {
+            token = self.next_token();
+        }
+        self.rewind();
     }
 
     fn expect_token(&mut self, token_kind: Token) {
+        if token_kind != Token::Whitespace {
+            self.skip_whitespace();
+        }
         let token = self.next_token();
         if token != token_kind {
             panic!(
@@ -56,6 +83,7 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn expect_number(&mut self) -> u8 {
+        self.skip_whitespace();
         let token = self.next_token();
         if let Token::Int(num) = token {
             num
@@ -100,9 +128,7 @@ fn main() {
 
             println!(
                 "Evaluated expression: (+ {} {})\nResult: {}",
-                e.left,
-                e.right,
-                res
+                e.left, e.right, res
             );
         }
         input_buf.clear();
@@ -164,4 +190,11 @@ fn test_parser_expression() {
     let mut rdr = Tokenizer::new("(+ 1 2)");
     let e = rdr.parse_expression();
     assert_eq!(e, Expr { left: 1, right: 2 });
+}
+
+#[test]
+fn test_eval() {
+    assert_eq!(eval(&Expr { left: 3, right: 5 }), 8);
+    assert_eq!(eval(&Expr { left: 9, right: 0 }), 9);
+    assert_eq!(eval(&Expr { left: 4, right: 1 }), 5);
 }
