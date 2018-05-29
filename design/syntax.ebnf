@@ -1,35 +1,3 @@
-(* this is a basic EBNF defining some numerical types for a simple calculation-oriented language 
-   pretty no-frills, like digit separators, non-decimal bases or infix operators for now;
-   using S-exprs for simpler parsing later *)
-
-sign = "+" | "-" ;
-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-digits = digit, { digit } ;
-
-integer = [ sign ], digits ;
-(* examples:
-    0
-    123123123
-    -535351
-    -0 *)
-
-exponent = "e" | "E", integer ;
-float = integer, ".", digits, [ exponent ] ;
-(* examples:
-    0.0
-    66445.234
-    0.4345345
-    1.003453e123
-    -123.5345
-    -1.3463E-23 *)
-
-number = integer | float ;
-
-binary_operator = "+" | "-" | "*" | "/" ;
-binary_expression = "(", binary_operator, " ", expression, " ", expression, ")" ;
-expression = number | binary_expression ;
-(* examples:
-    5
-    (+ 2 5)
-    (* (+ 3.045e24 123) (- -224 +334.085E+20))
-    *)
+number = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+operator = "+" ;
+binexpr = "(", operator, " ", number, " ", number, ")" ;
