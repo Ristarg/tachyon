@@ -3,19 +3,25 @@ enum Token {
     Unknown,
     Int(u8),
     PlusSign,
-    OpenBracket,
-    CloseBracket,
-    Space,
+    OpenParenthesis,
+    CloseParenthesis,
+    Whitespace,
 }
 
-struct SourceReader<'a> {
+#[derive(Debug, PartialEq)]
+struct Expr {
+    left: u8,
+    right: u8,
+}
+
+struct Tokenizer<'a> {
     source: &'a [u8],
     idx: usize,
 }
 
-impl<'a> SourceReader<'a> {
-    fn new(source: &str) -> SourceReader {
-        SourceReader {
+impl<'a> Tokenizer<'a> {
+    fn new(source: &str) -> Tokenizer {
+        Tokenizer {
             source: source.as_bytes(),
             idx: 0,
         }
@@ -26,9 +32,9 @@ impl<'a> SourceReader<'a> {
         let token = match cur_char {
             b'0'...b'9' => Token::Int(cur_char - b'0'),
             b'+' => Token::PlusSign,
-            b'(' => Token::OpenBracket,
-            b')' => Token::CloseBracket,
-            b' ' => Token::Space,
+            b'(' => Token::OpenParenthesis,
+            b')' => Token::CloseParenthesis,
+            b' ' => Token::Whitespace,
             _ => Token::Unknown,
         };
 
@@ -60,37 +66,60 @@ impl<'a> SourceReader<'a> {
             Got instead: \"{:?}\"
             ",
                 token
-            );
+            ); // TODO: code duplication REEEEEEE
         }
+    }
+
+    fn parse_expression(&mut self) -> Expr {
+        // FIXME: parse method on the Tokenizer?
+        self.expect_token(Token::OpenParenthesis);
+        self.expect_token(Token::PlusSign);
+        self.expect_token(Token::Whitespace);
+        let left = self.expect_number();
+        self.expect_token(Token::Whitespace);
+        let right = self.expect_number();
+        self.expect_token(Token::CloseParenthesis);
+
+        Expr { left, right }
     }
 }
 
 fn main() {
-    let mut rdr = SourceReader::new("(+ 1 2)");
+    use std::io::Write;
 
-    rdr.expect_token(Token::OpenBracket);
-    println!("Got open bracket");
+    let mut input_buf = String::new();
+    loop {
+        std::io::stdout().write(">>> ".as_bytes()).unwrap();
+        std::io::stdout().flush().unwrap();
+        std::io::stdin().read_line(&mut input_buf).unwrap();
 
-    rdr.expect_token(Token::PlusSign);
-    println!("Got plus sign");
+        {
+            let mut rdr = Tokenizer::new(&input_buf);
+            let e = rdr.parse_expression();
+            let res = eval(&e);
 
-    rdr.expect_token(Token::Space);
-    let left = rdr.expect_number();
-    println!("Got left operand: {}", left);
-
-    rdr.expect_token(Token::Space);
-    let right = rdr.expect_number();
-    println!("Got right operand: {}", right);
-
-    rdr.expect_token(Token::CloseBracket);
-    println!("Got close bracket");
-
-    println!("Result is: {}", left + right);
+            println!(
+                "Evaluated expression: (+ {} {})\nResult: {}",
+                e.left,
+                e.right,
+                res
+            );
+        }
+        input_buf.clear();
+    }
 }
+
+fn eval(expr: &Expr) -> u8 {
+    expr.left + expr.right
+}
+
+// *********
+// * TESTS *
+// *********
 
 #[test]
 fn test_lexer_integers() {
-    let mut rdr = SourceReader::new("0123456789");
+    let mut rdr = Tokenizer::new("0123456789");
 
     assert_eq!(rdr.next_token(), Token::Int(0));
     assert_eq!(rdr.next_token(), Token::Int(1));
@@ -106,26 +135,33 @@ fn test_lexer_integers() {
 
 #[test]
 fn test_lexer_singletons() {
-    assert_eq!(SourceReader::new("+").next_token(), Token::PlusSign);
-    assert_eq!(SourceReader::new("(").next_token(), Token::OpenBracket);
-    assert_eq!(SourceReader::new(")").next_token(), Token::CloseBracket);
-    assert_eq!(SourceReader::new(" ").next_token(), Token::Space);
+    assert_eq!(Tokenizer::new("+").next_token(), Token::PlusSign);
+    assert_eq!(Tokenizer::new("(").next_token(), Token::OpenParenthesis);
+    assert_eq!(Tokenizer::new(")").next_token(), Token::CloseParenthesis);
+    assert_eq!(Tokenizer::new(" ").next_token(), Token::Whitespace);
 }
 
 #[test]
 fn test_lexer_unknown_characters() {
-    assert_eq!(SourceReader::new("a").next_token(), Token::Unknown);
-    assert_eq!(SourceReader::new("$").next_token(), Token::Unknown);
+    assert_eq!(Tokenizer::new("a").next_token(), Token::Unknown);
+    assert_eq!(Tokenizer::new("$").next_token(), Token::Unknown);
 }
 
 #[test]
-fn test_lexer_expressions() {
-    let mut rdr = SourceReader::new("(+ 1 2)");
-    assert_eq!(rdr.next_token(), Token::OpenBracket);
+fn test_lexer_expression() {
+    let mut rdr = Tokenizer::new("(+ 1 2)");
+    assert_eq!(rdr.next_token(), Token::OpenParenthesis);
     assert_eq!(rdr.next_token(), Token::PlusSign);
-    assert_eq!(rdr.next_token(), Token::Space);
+    assert_eq!(rdr.next_token(), Token::Whitespace);
     assert_eq!(rdr.next_token(), Token::Int(1));
-    assert_eq!(rdr.next_token(), Token::Space);
+    assert_eq!(rdr.next_token(), Token::Whitespace);
     assert_eq!(rdr.next_token(), Token::Int(2));
-    assert_eq!(rdr.next_token(), Token::CloseBracket);
+    assert_eq!(rdr.next_token(), Token::CloseParenthesis);
+}
+
+#[test]
+fn test_parser_expression() {
+    let mut rdr = Tokenizer::new("(+ 1 2)");
+    let e = rdr.parse_expression();
+    assert_eq!(e, Expr { left: 1, right: 2 });
 }
