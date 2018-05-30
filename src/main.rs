@@ -1,4 +1,4 @@
-#![feature(range_contains)]
+#![feature(range_contains, box_patterns)]
 
 #[derive(Clone, Debug, PartialEq)]
 enum Token {
@@ -18,10 +18,16 @@ enum Operator {
 }
 
 #[derive(Debug, PartialEq)]
-struct Expr {
+struct BinExpr {
     op: Operator,
-    left: u64,
-    right: u64,
+    left: Expr,
+    right: Expr,
+}
+
+#[derive(Debug, PartialEq)]
+enum Expr {
+    Number(u64),
+    BinExpr(Box<BinExpr>) //FIXME: naming scheme! ugh
 }
 
 struct Tokenizer<'a> {
@@ -140,16 +146,33 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn parse_expression(&mut self) -> Expr {
-        // FIXME: parse method on the Tokenizer?
-        self.expect_token(Token::OpenParenthesis);
+        let token = self.next_token();
+        match token {
+            Token::Int(i) => Expr::Number(i),
+            Token::OpenParenthesis => {
+                Expr::BinExpr(Box::new(self.parse_binary_expression()))
+            }
+            _ => {
+                panic!(
+                    "
+            Expected token: \"Int\" | \"OpenParenthesis\"
+            Got instead: \"{:?}\"
+            ",
+                    token
+                );
+            }
+        }
+    }
+
+    fn parse_binary_expression(&mut self) -> BinExpr {
         let op = self.expect_operator();
         self.expect_token(Token::Whitespace);
-        let left = self.expect_number();
+        let left = self.parse_expression();
         self.expect_token(Token::Whitespace);
-        let right = self.expect_number();
+        let right = self.parse_expression();
         self.expect_token(Token::CloseParenthesis);
 
-        Expr { op, left, right }
+        BinExpr { op, left, right }
     }
 }
 
@@ -167,19 +190,25 @@ fn main() {
             let e = rdr.parse_expression();
             let res = eval(&e);
 
-            println!(
-                "Evaluated expression: ({:?} {} {})\nResult: {}",
-                e.op, e.left, e.right, res
-            );
+            // println!(
+            //     "Evaluated expression: ({:?} {} {})\nResult: {}",
+            //     e.op, e.left, e.right, res
+            // );
+            println!("{}", res);
         }
         input_buf.clear();
     }
 }
 
 fn eval(expr: &Expr) -> u64 {
-    match expr.op {
-        Operator::Add => expr.left + expr.right,
-        Operator::Multiply => expr.left * expr.right,
+    match expr {
+        Expr::Number(n) => *n,
+        Expr::BinExpr(box expr) => {
+            match expr.op {
+                Operator::Add => eval(&expr.left) + eval(&expr.right),
+                Operator::Multiply => eval(&expr.left) * eval(&expr.right),
+            }
+        }
     }
 }
 
@@ -233,10 +262,10 @@ fn test_lexer_expressions() {
 #[test]
 fn test_parser_expressions() {
     let mut rdr = Tokenizer::new("(+ 1 2)");
-    let e = rdr.parse_expression();
+    let e = rdr.parse_binary_expression();
     assert_eq!(
         e,
-        Expr {
+        BinExpr {
             op: Operator::Add,
             left: 1,
             right: 2
@@ -244,10 +273,10 @@ fn test_parser_expressions() {
     );
 
     let mut rdr = Tokenizer::new("(* 3 4)");
-    let e = rdr.parse_expression();
+    let e = rdr.parse_binary_expression();
     assert_eq!(
         e,
-        Expr {
+        BinExpr {
             op: Operator::Multiply,
             left: 3,
             right: 4
@@ -257,8 +286,9 @@ fn test_parser_expressions() {
 
 #[test]
 fn test_eval() {
+    //FIXME: recursion broke everything, fix this shit
     assert_eq!(
-        eval(&Expr {
+        eval(&BinExpr {
             op: Operator::Add,
             left: 9,
             right: 0
@@ -266,7 +296,7 @@ fn test_eval() {
         9
     );
     assert_eq!(
-        eval(&Expr {
+        eval(&BinExpr {
             op: Operator::Add,
             left: 4,
             right: 1
@@ -274,7 +304,7 @@ fn test_eval() {
         5
     );
     assert_eq!(
-        eval(&Expr {
+        eval(&BinExpr {
             op: Operator::Add,
             left: 3,
             right: 5
@@ -283,7 +313,7 @@ fn test_eval() {
     );
 
     assert_eq!(
-        eval(&Expr {
+        eval(&BinExpr {
             op: Operator::Multiply,
             left: 4,
             right: 1
@@ -291,7 +321,7 @@ fn test_eval() {
         4
     );
     assert_eq!(
-        eval(&Expr {
+        eval(&BinExpr {
             op: Operator::Multiply,
             left: 3,
             right: 5
@@ -299,7 +329,7 @@ fn test_eval() {
         15
     );
     assert_eq!(
-        eval(&Expr {
+        eval(&BinExpr {
             op: Operator::Multiply,
             left: 9,
             right: 0
