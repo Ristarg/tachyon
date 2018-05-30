@@ -1,7 +1,9 @@
+#![feature(range_contains)]
+
 #[derive(Clone, Debug, PartialEq)]
 enum Token {
     Unknown,
-    Int(u8),
+    Int(u64),
     Plus,
     Asterisk,
     OpenParenthesis,
@@ -12,14 +14,14 @@ enum Token {
 #[derive(Debug, PartialEq)]
 enum Operator {
     Add,
-    Multiply
+    Multiply,
 }
 
 #[derive(Debug, PartialEq)]
 struct Expr {
     op: Operator,
-    left: u8,
-    right: u8,
+    left: u64,
+    right: u64,
 }
 
 struct Tokenizer<'a> {
@@ -48,7 +50,18 @@ impl<'a> Tokenizer<'a> {
         } else {
             let cur_char = self.source[self.idx];
             let token = match cur_char {
-                b'0'...b'9' => Token::Int(cur_char - b'0'),
+                b'0'...b'9' => {
+                    let mut num: u64 = 0;
+                    while self.idx < self.source.len() //TODO: make a global OOB guard as well
+                        && (b'0'..=b'9').contains(&self.source[self.idx])
+                    {
+                        num *= 10;
+                        num += (self.source[self.idx] - b'0') as u64;
+                        self.idx += 1;
+                    }
+                    self.idx -= 1; //FIXME: rewinding because of the global stepping below, fragile?
+                    Token::Int(num)
+                }
                 b'+' => Token::Plus,
                 b'*' => Token::Asterisk,
                 b'(' => Token::OpenParenthesis,
@@ -91,7 +104,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    fn expect_number(&mut self) -> u8 {
+    fn expect_number(&mut self) -> u64 {
         self.skip_whitespace();
         let token = self.next_token();
         if let Token::Int(num) = token {
@@ -163,10 +176,10 @@ fn main() {
     }
 }
 
-fn eval(expr: &Expr) -> u8 {
+fn eval(expr: &Expr) -> u64 {
     match expr.op {
         Operator::Add => expr.left + expr.right,
-        Operator::Multiply => expr.left * expr.right
+        Operator::Multiply => expr.left * expr.right,
     }
 }
 
@@ -176,18 +189,9 @@ fn eval(expr: &Expr) -> u8 {
 
 #[test]
 fn test_lexer_integers() {
-    let mut rdr = Tokenizer::new("0123456789");
+    let mut rdr = Tokenizer::new("1234567890");
 
-    assert_eq!(rdr.next_token(), Token::Int(0));
-    assert_eq!(rdr.next_token(), Token::Int(1));
-    assert_eq!(rdr.next_token(), Token::Int(2));
-    assert_eq!(rdr.next_token(), Token::Int(3));
-    assert_eq!(rdr.next_token(), Token::Int(4));
-    assert_eq!(rdr.next_token(), Token::Int(5));
-    assert_eq!(rdr.next_token(), Token::Int(6));
-    assert_eq!(rdr.next_token(), Token::Int(7));
-    assert_eq!(rdr.next_token(), Token::Int(8));
-    assert_eq!(rdr.next_token(), Token::Int(9));
+    assert_eq!(rdr.next_token(), Token::Int(1234567890));
 }
 
 #[test]
@@ -207,22 +211,22 @@ fn test_lexer_unknown_characters() {
 
 #[test]
 fn test_lexer_expressions() {
-    let mut rdr = Tokenizer::new("(+ 1 2)");
+    let mut rdr = Tokenizer::new("(+ 123 245)");
     assert_eq!(rdr.next_token(), Token::OpenParenthesis);
     assert_eq!(rdr.next_token(), Token::Plus);
     assert_eq!(rdr.next_token(), Token::Whitespace);
-    assert_eq!(rdr.next_token(), Token::Int(1));
+    assert_eq!(rdr.next_token(), Token::Int(123));
     assert_eq!(rdr.next_token(), Token::Whitespace);
-    assert_eq!(rdr.next_token(), Token::Int(2));
+    assert_eq!(rdr.next_token(), Token::Int(245));
     assert_eq!(rdr.next_token(), Token::CloseParenthesis);
 
-    let mut rdr = Tokenizer::new("(* 3 4)");
+    let mut rdr = Tokenizer::new("(* 398 4788)");
     assert_eq!(rdr.next_token(), Token::OpenParenthesis);
     assert_eq!(rdr.next_token(), Token::Asterisk);
     assert_eq!(rdr.next_token(), Token::Whitespace);
-    assert_eq!(rdr.next_token(), Token::Int(3));
+    assert_eq!(rdr.next_token(), Token::Int(398));
     assert_eq!(rdr.next_token(), Token::Whitespace);
-    assert_eq!(rdr.next_token(), Token::Int(4));
+    assert_eq!(rdr.next_token(), Token::Int(4788));
     assert_eq!(rdr.next_token(), Token::CloseParenthesis);
 }
 
@@ -230,20 +234,76 @@ fn test_lexer_expressions() {
 fn test_parser_expressions() {
     let mut rdr = Tokenizer::new("(+ 1 2)");
     let e = rdr.parse_expression();
-    assert_eq!(e, Expr { op: Operator::Add, left: 1, right: 2 });
+    assert_eq!(
+        e,
+        Expr {
+            op: Operator::Add,
+            left: 1,
+            right: 2
+        }
+    );
 
     let mut rdr = Tokenizer::new("(* 3 4)");
     let e = rdr.parse_expression();
-    assert_eq!(e, Expr { op: Operator::Multiply, left: 3, right: 4 });
+    assert_eq!(
+        e,
+        Expr {
+            op: Operator::Multiply,
+            left: 3,
+            right: 4
+        }
+    );
 }
 
 #[test]
 fn test_eval() {
-    assert_eq!(eval(&Expr { op: Operator::Add, left: 9, right: 0 }), 9);
-    assert_eq!(eval(&Expr { op: Operator::Add, left: 4, right: 1 }), 5);
-    assert_eq!(eval(&Expr { op: Operator::Add, left: 3, right: 5 }), 8);
+    assert_eq!(
+        eval(&Expr {
+            op: Operator::Add,
+            left: 9,
+            right: 0
+        }),
+        9
+    );
+    assert_eq!(
+        eval(&Expr {
+            op: Operator::Add,
+            left: 4,
+            right: 1
+        }),
+        5
+    );
+    assert_eq!(
+        eval(&Expr {
+            op: Operator::Add,
+            left: 3,
+            right: 5
+        }),
+        8
+    );
 
-    assert_eq!(eval(&Expr { op: Operator::Multiply, left: 4, right: 1 }), 4);
-    assert_eq!(eval(&Expr { op: Operator::Multiply, left: 3, right: 5 }), 15);
-    assert_eq!(eval(&Expr { op: Operator::Multiply, left: 9, right: 0 }), 0);
+    assert_eq!(
+        eval(&Expr {
+            op: Operator::Multiply,
+            left: 4,
+            right: 1
+        }),
+        4
+    );
+    assert_eq!(
+        eval(&Expr {
+            op: Operator::Multiply,
+            left: 3,
+            right: 5
+        }),
+        15
+    );
+    assert_eq!(
+        eval(&Expr {
+            op: Operator::Multiply,
+            left: 9,
+            right: 0
+        }),
+        0
+    );
 }
