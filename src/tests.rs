@@ -19,8 +19,8 @@ fn test_lexer_singletons() {
 
 #[test]
 fn test_lexer_unknown_characters() {
-    assert_eq!(Tokenizer::new("a").next_token(), Token::Unknown);
-    assert_eq!(Tokenizer::new("$").next_token(), Token::Unknown);
+    assert_eq!(Tokenizer::new("a").next_token(), Token::Unknown('a'));
+    assert_eq!(Tokenizer::new("$").next_token(), Token::Unknown('$'));
 }
 
 #[test]
