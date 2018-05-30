@@ -5,7 +5,7 @@ mod tests;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Token {
-    Unknown,
+    Unknown(char),
     OpenParenthesis,
     CloseParenthesis,
     Whitespace,
@@ -47,7 +47,7 @@ impl<'a> Tokenizer<'a> {
         Tokenizer {
             source: source.as_bytes(),
             idx: 0,
-            last_token: Token::Unknown,
+            last_token: Token::Unknown('\0'),
             rewind: false,
         }
     }
@@ -81,7 +81,7 @@ impl<'a> Tokenizer<'a> {
             b'(' => Token::OpenParenthesis,
             b')' => Token::CloseParenthesis,
             b' ' => Token::Whitespace,
-            _ => Token::Unknown,
+            other => Token::Unknown(other as char),
         };
 
         self.idx += 1;

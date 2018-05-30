@@ -6,7 +6,7 @@ languages. It is not intended to be a tool to be used in production or as a hobb
 one the future.
 
 # Stuff to do (in no particular order)
-- Test are broken, fix them and move out to a separate file
+- [x] Test are broken, fix them and move out to a separate file
 - REFACTOR REFACTOR REFACTOR
 - Would be nice to have some negative numbers, also subtraction
 - Floats? Also division
