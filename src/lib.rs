@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Token {
     Unknown(char),
     OpenParenthesis,
@@ -16,26 +16,26 @@ enum Token {
 }
 
 #[derive(Debug, PartialEq)]
-enum Operator {
+pub enum Operator {
     Add,
     Subtract,
     Multiply,
 }
 
 #[derive(Debug, PartialEq)]
-struct BinExpr {
-    op: Operator,
-    left: Expr,
-    right: Expr,
+pub struct BinExpr {
+    pub op: Operator,
+    pub left: Expr,
+    pub right: Expr,
 }
 
 #[derive(Debug, PartialEq)]
-enum Expr {
+pub enum Expr {
     Number(u64),
     BinExprPtr(Box<BinExpr>),
 }
 
-struct Tokenizer<'a> {
+pub struct Tokenizer<'a> {
     source: &'a [u8],
     idx: usize,
     last_token: Token,
@@ -43,12 +43,31 @@ struct Tokenizer<'a> {
 }
 
 impl<'a> Tokenizer<'a> {
-    fn new(source: &str) -> Tokenizer {
+    pub fn new(source: &str) -> Tokenizer {
         Tokenizer {
             source: source.as_bytes(),
             idx: 0,
             last_token: Token::Unknown('\0'),
             rewind: false,
+        }
+    }
+
+    pub fn parse_expression(&mut self) -> Expr {
+        self.skip_whitespace();
+        let token = self.next_token();
+        match token {
+            Token::Int(i) => Expr::Number(i),
+            Token::OpenParenthesis => {
+                let e = Expr::BinExprPtr(Box::new(self.parse_binary_expression()));
+                self.expect_token(&Token::CloseParenthesis);
+                e
+            }
+            _ => {
+                panic!(
+                    "Expected token: \"Int\" | \"OpenParenthesis\"\nGot instead: \"{:?}\"",
+                    token
+                );
+            }
         }
     }
 
@@ -59,7 +78,7 @@ impl<'a> Tokenizer<'a> {
     fn next_token(&mut self) -> Token {
         if self.rewind {
             self.rewind = false;
-            return self.last_token.clone();
+            return self.last_token;
         }
 
         let token = match self.cur_char() {
@@ -69,7 +88,7 @@ impl<'a> Tokenizer<'a> {
                     && (b'0'..=b'9').contains(&self.cur_char())
                 {
                     num *= 10;
-                    num += (self.cur_char() - b'0') as u64;
+                    num += u64::from(self.cur_char() - b'0');
                     self.idx += 1;
                 }
                 self.idx -= 1; //FIXME: rewinding because of the global stepping below, fragile?
@@ -85,7 +104,7 @@ impl<'a> Tokenizer<'a> {
         };
 
         self.idx += 1;
-        self.last_token = token.clone();
+        self.last_token = token;
         token
     }
 
@@ -98,17 +117,14 @@ impl<'a> Tokenizer<'a> {
         self.rewind();
     }
 
-    fn expect_token(&mut self, token_kind: Token) {
-        if token_kind != Token::Whitespace {
+    fn expect_token(&mut self, token_kind: &Token) {
+        if *token_kind != Token::Whitespace {
             self.skip_whitespace();
         }
         let token = self.next_token();
-        if token != token_kind {
+        if token != *token_kind {
             panic!(
-                "
-            Expected token: \"{:?}\"
-            Got instead: \"{:?}\"
-            ",
+                "Expected token: \"{:?}\"\nGot instead: \"{:?}\"",
                 token_kind, token
             );
         }
@@ -124,32 +140,7 @@ impl<'a> Tokenizer<'a> {
             Token::Asterisk => Operator::Multiply,
             _ => {
                 panic!(
-                    "
-            Expected token: \"Plus\" | \"Minus\" | \"Asterisk\"
-            Got instead: \"{:?}\"
-            ",
-                    token
-                );
-            }
-        }
-    }
-
-    fn parse_expression(&mut self) -> Expr {
-        self.skip_whitespace();
-        let token = self.next_token();
-        match token {
-            Token::Int(i) => Expr::Number(i),
-            Token::OpenParenthesis => {
-                let e = Expr::BinExprPtr(Box::new(self.parse_binary_expression()));
-                self.expect_token(Token::CloseParenthesis);
-                e
-            }
-            _ => {
-                panic!(
-                    "
-            Expected token: \"Int\" | \"OpenParenthesis\"
-            Got instead: \"{:?}\"
-            ",
+                    "Expected token: \"Plus\" | \"Minus\" | \"Asterisk\"\nGot instead: \"{:?}\"",
                     token
                 );
             }
@@ -158,32 +149,16 @@ impl<'a> Tokenizer<'a> {
 
     fn parse_binary_expression(&mut self) -> BinExpr {
         let op = self.expect_operator();
-        self.expect_token(Token::Whitespace);
+        self.expect_token(&Token::Whitespace);
         let left = self.parse_expression();
-        self.expect_token(Token::Whitespace);
+        self.expect_token(&Token::Whitespace);
         let right = self.parse_expression();
 
         BinExpr { op, left, right }
     }
 }
 
-fn main() {
-    use std::io::Write;
-
-    let mut input_buf = String::new();
-    loop {
-        print!(">>> ");
-        std::io::stdout().flush().unwrap();
-        std::io::stdin().read_line(&mut input_buf).unwrap();
-
-        let res = eval(&Tokenizer::new(&input_buf).parse_expression());
-
-        println!("{}", res);
-        input_buf.clear();
-    }
-}
-
-fn eval(expr: &Expr) -> u64 {
+pub fn eval(expr: &Expr) -> u64 {
     match expr {
         Expr::Number(n) => *n,
         Expr::BinExprPtr(box expr) => match expr.op {
