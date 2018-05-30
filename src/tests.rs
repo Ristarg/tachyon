@@ -72,23 +72,23 @@ fn test_parser_expressions() {
     assert_eq!(expr, Expr::Number(1));
 
     let expr = Tokenizer::new("(+ 1 2)").parse_expression();
-    assert_eq!(expr, Expr::BinExpr(Box::new(BinExpr {
+    assert_eq!(expr, Expr::BinExprPtr(Box::new(BinExpr {
         op: Operator::Add,
         left: Expr::Number(1),
         right: Expr::Number(2)
     })));
 
     let expr = Tokenizer::new("(* (+ 123 565) (* (+ 12 3) 134))").parse_expression();
-    assert_eq!(expr, Expr::BinExpr(Box::new(BinExpr {
+    assert_eq!(expr, Expr::BinExprPtr(Box::new(BinExpr {
         op: Operator::Multiply,
-        left: Expr::BinExpr(Box::new(BinExpr {
+        left: Expr::BinExprPtr(Box::new(BinExpr {
             op: Operator::Add,
             left: Expr::Number(123),
             right: Expr::Number(565)
         })),
-        right: Expr::BinExpr(Box::new(BinExpr {
+        right: Expr::BinExprPtr(Box::new(BinExpr {
             op: Operator::Multiply,
-            left: Expr::BinExpr(Box::new(BinExpr {
+            left: Expr::BinExprPtr(Box::new(BinExpr {
                 op: Operator::Add,
                 left: Expr::Number(12),
                 right: Expr::Number(3)
