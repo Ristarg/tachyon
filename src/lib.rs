@@ -12,7 +12,7 @@ enum Token {
     Plus,
     Minus,
     Asterisk,
-    Int(u64),
+    Int(i64),
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,7 +31,7 @@ pub struct BinExpr {
 
 #[derive(Debug, PartialEq)]
 pub enum Expr {
-    Number(u64),
+    Number(i64),
     BinExprPtr(Box<BinExpr>),
 }
 
@@ -54,18 +54,18 @@ impl<'a> Tokenizer<'a> {
 
     pub fn parse_expression(&mut self) -> Expr {
         self.skip_whitespace();
-        let token = self.next_token();
-        match token {
+
+        match self.next_token() {
             Token::Int(i) => Expr::Number(i),
             Token::OpenParenthesis => {
                 let e = Expr::BinExprPtr(Box::new(self.parse_binary_expression()));
                 self.expect_token(&Token::CloseParenthesis);
                 e
             }
-            _ => {
+            other => {
                 panic!(
-                    "Expected token: \"Int\" | \"OpenParenthesis\"\nGot instead: \"{:?}\"",
-                    token
+                    "Expected token: Int | OpenParenthesis\nGot instead: {:?}",
+                    other
                 );
             }
         }
@@ -75,6 +75,19 @@ impl<'a> Tokenizer<'a> {
         self.source[self.idx]
     }
 
+    fn read_uint(&mut self) -> i64 {
+        let mut num: i64 = 0;
+        while self.idx < self.source.len() //TODO: make a global OOB guard as well
+            && (b'0'..=b'9').contains(&self.cur_char())
+        {
+            num *= 10;
+            num += i64::from(self.cur_char() - b'0');
+            self.idx += 1;
+        }
+        self.idx -= 1; //FIXME: rewinding because of the global stepping below, fragile?
+        num
+    }
+
     fn next_token(&mut self) -> Token {
         if self.rewind {
             self.rewind = false;
@@ -82,20 +95,18 @@ impl<'a> Tokenizer<'a> {
         }
 
         let token = match self.cur_char() {
-            b'0'...b'9' => {
-                let mut num: u64 = 0;
-                while self.idx < self.source.len() //TODO: make a global OOB guard as well
-                    && (b'0'..=b'9').contains(&self.cur_char())
-                {
-                    num *= 10;
-                    num += u64::from(self.cur_char() - b'0');
-                    self.idx += 1;
-                }
-                self.idx -= 1; //FIXME: rewinding because of the global stepping below, fragile?
-                Token::Int(num)
-            }
+            b'0'...b'9' => Token::Int(self.read_uint()),
             b'+' => Token::Plus,
-            b'-' => Token::Minus,
+            b'-' => {
+                if self.idx + 1 < self.source.len()
+                    && (b'0'..=b'9').contains(&self.source[self.idx + 1])
+                {
+                    self.idx += 1;
+                    Token::Int(-self.read_uint())
+                } else {
+                    Token::Minus
+                }
+            }
             b'*' => Token::Asterisk,
             b'(' => Token::OpenParenthesis,
             b')' => Token::CloseParenthesis,
@@ -108,13 +119,9 @@ impl<'a> Tokenizer<'a> {
         token
     }
 
-    fn rewind(&mut self) {
-        self.rewind = true;
-    }
-
     fn skip_whitespace(&mut self) {
         while let Token::Whitespace = self.next_token() {}
-        self.rewind();
+        self.rewind = true;
     }
 
     fn expect_token(&mut self, token_kind: &Token) {
@@ -123,10 +130,7 @@ impl<'a> Tokenizer<'a> {
         }
         let token = self.next_token();
         if token != *token_kind {
-            panic!(
-                "Expected token: \"{:?}\"\nGot instead: \"{:?}\"",
-                token_kind, token
-            );
+            panic!("Expected token: {:?}\nGot instead: {:?}", token_kind, token);
         }
     }
 
@@ -140,7 +144,7 @@ impl<'a> Tokenizer<'a> {
             Token::Asterisk => Operator::Multiply,
             _ => {
                 panic!(
-                    "Expected token: \"Plus\" | \"Minus\" | \"Asterisk\"\nGot instead: \"{:?}\"",
+                    "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
                     token
                 );
             }
@@ -158,7 +162,7 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-pub fn eval(expr: &Expr) -> u64 {
+pub fn eval(expr: &Expr) -> i64 {
     match expr {
         Expr::Number(n) => *n,
         Expr::BinExprPtr(box expr) => match expr.op {
