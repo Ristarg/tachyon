@@ -58,16 +58,14 @@ impl<'a> Tokenizer<'a> {
         match self.next_token() {
             Token::Int(i) => Expr::Number(i),
             Token::OpenParenthesis => {
-                let e = Expr::BinExprPtr(Box::new(self.parse_binary_expression()));
+                let expr = self.parse_binary_expression();
                 self.expect_token(&Token::CloseParenthesis);
-                e
+                Expr::BinExprPtr(Box::new(expr))
             }
-            other => {
-                panic!(
-                    "Expected token: Int | OpenParenthesis\nGot instead: {:?}",
-                    other
-                );
-            }
+            other => panic!(
+                "Expected token: Int | OpenParenthesis\nGot instead: {:?}",
+                other
+            ),
         }
     }
 
@@ -77,14 +75,12 @@ impl<'a> Tokenizer<'a> {
 
     fn read_uint(&mut self) -> i64 {
         let mut num: i64 = 0;
-        while self.idx < self.source.len() //TODO: make a global OOB guard as well
-            && (b'0'..=b'9').contains(&self.cur_char())
-        {
+        while self.idx < self.source.len() && (b'0'..=b'9').contains(&self.cur_char()) {
             num *= 10;
             num += i64::from(self.cur_char() - b'0');
             self.idx += 1;
         }
-        self.idx -= 1; //FIXME: rewinding because of the global stepping below, fragile?
+        self.idx -= 1;
         num
     }
 
@@ -96,7 +92,6 @@ impl<'a> Tokenizer<'a> {
 
         let token = match self.cur_char() {
             b'0'...b'9' => Token::Int(self.read_uint()),
-            b'+' => Token::Plus,
             b'-' => {
                 if self.idx + 1 < self.source.len()
                     && (b'0'..=b'9').contains(&self.source[self.idx + 1])
@@ -107,6 +102,7 @@ impl<'a> Tokenizer<'a> {
                     Token::Minus
                 }
             }
+            b'+' => Token::Plus,
             b'*' => Token::Asterisk,
             b'(' => Token::OpenParenthesis,
             b')' => Token::CloseParenthesis,
@@ -124,30 +120,29 @@ impl<'a> Tokenizer<'a> {
         self.rewind = true;
     }
 
-    fn expect_token(&mut self, token_kind: &Token) {
-        if *token_kind != Token::Whitespace {
+    fn expect_token(&mut self, expected: &Token) {
+        if *expected != Token::Whitespace {
             self.skip_whitespace();
         }
+
         let token = self.next_token();
-        if token != *token_kind {
-            panic!("Expected token: {:?}\nGot instead: {:?}", token_kind, token);
+        if token != *expected {
+            panic!("Expected token: {:?}\nGot instead: {:?}", expected, token);
         }
     }
 
     fn expect_operator(&mut self) -> Operator {
-        //TODO: since this is a lisp, make hardcoded operators into function names for lookup
         self.skip_whitespace();
-        let token = self.next_token();
-        match token {
+
+        match self.next_token() {
+            //FIXME: this feels redundant
             Token::Plus => Operator::Add,
             Token::Minus => Operator::Subtract,
             Token::Asterisk => Operator::Multiply,
-            _ => {
-                panic!(
-                    "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
-                    token
-                );
-            }
+            other => panic!(
+                "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
+                other
+            ),
         }
     }
 

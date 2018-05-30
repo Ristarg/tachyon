@@ -1,10 +1,13 @@
-use super::*;
+use super::{Expr::*, *};
 
 #[test]
 fn test_lexer_integers() {
-    let mut rdr = Tokenizer::new("1234567890");
-
-    assert_eq!(rdr.next_token(), Token::Int(1234567890));
+    assert_eq!(
+        Tokenizer::new("1234567890").next_token(),
+        Token::Int(1234567890)
+    );
+    assert_eq!(Tokenizer::new("456456").next_token(), Token::Int(456456));
+    assert_eq!(Tokenizer::new("-123132").next_token(), Token::Int(-123132));
 }
 
 #[test]
@@ -73,60 +76,55 @@ fn test_lexer_expressions() {
 
 #[test]
 fn test_parser_binary_expressions() {
-    let expr = Tokenizer::new("+ 1 2").parse_binary_expression();
     assert_eq!(
-        expr,
+        Tokenizer::new("+ 1 2").parse_binary_expression(),
         BinExpr {
             op: Operator::Add,
-            left: Expr::Number(1),
-            right: Expr::Number(2)
+            left: Number(1),
+            right: Number(2)
         }
     );
 
-    let expr = Tokenizer::new("* 345 478").parse_binary_expression();
     assert_eq!(
-        expr,
+        Tokenizer::new("* 345 478").parse_binary_expression(),
         BinExpr {
             op: Operator::Multiply,
-            left: Expr::Number(345),
-            right: Expr::Number(478)
+            left: Number(345),
+            right: Number(478)
         }
     );
 }
 
 #[test]
 fn test_parser_expressions() {
-    let expr = Tokenizer::new("1").parse_expression();
-    assert_eq!(expr, Expr::Number(1));
+    assert_eq!(Tokenizer::new("1").parse_expression(), Number(1));
 
-    let expr = Tokenizer::new("(+ 1 2)").parse_expression();
     assert_eq!(
-        expr,
-        Expr::BinExprPtr(Box::new(BinExpr {
+        Tokenizer::new("(+ 1 2)").parse_expression(),
+        BinExprPtr(Box::new(BinExpr {
             op: Operator::Add,
-            left: Expr::Number(1),
-            right: Expr::Number(2)
+            left: Number(1),
+            right: Number(2)
         }))
     );
 
-    let expr = Tokenizer::new("(* (+ 123 565) (* (+ 12 3) 134))").parse_expression();
     assert_eq!(
-        expr,
-        Expr::BinExprPtr(Box::new(BinExpr {
+        Tokenizer::new("(* (+ 123 565) (* (- 12 3) 134))").parse_expression(),
+        BinExprPtr(Box::new(BinExpr {
             op: Operator::Multiply,
-            left: Expr::BinExprPtr(Box::new(BinExpr {
+            left: BinExprPtr(Box::new(BinExpr {
                 op: Operator::Add,
-                left: Expr::Number(123),
-                right: Expr::Number(565)
+                left: Number(123),
+                right: Number(565)
             })),
-            right: Expr::BinExprPtr(Box::new(BinExpr {
+            right: BinExprPtr(Box::new(BinExpr {
                 op: Operator::Multiply,
-                left: Expr::BinExprPtr(Box::new(BinExpr {
-                    op: Operator::Add,
-                    left: Expr::Number(12),
-                    right: Expr::Number(3)
+                left: BinExprPtr(Box::new(BinExpr {
+                    op: Operator::Subtract,
+                    left: Number(12),
+                    right: Number(3)
                 })),
-                right: Expr::Number(134)
+                right: Number(134)
             }))
         }))
     );
@@ -142,7 +140,7 @@ fn test_eval() {
     assert_eq!(eval(&Tokenizer::new("(* 24 10)").parse_expression()), 240);
 
     assert_eq!(
-        eval(&Tokenizer::new("(+ (* 23 11) (* 2 (+ 3 4)))").parse_expression()),
-        267
+        eval(&Tokenizer::new("(+ (* 23 11) (* 2 (- 3 4)))").parse_expression()),
+        251
     );
 }
