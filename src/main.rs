@@ -1,4 +1,4 @@
-#![feature(range_contains, box_patterns)]
+#![feature(range_contains, box_patterns, iterator_repeat_with)]
 
 #[cfg(test)]
 mod tests;
@@ -10,6 +10,7 @@ enum Token {
     CloseParenthesis,
     Whitespace,
     Plus,
+    Minus,
     Asterisk,
     Int(u64),
 }
@@ -17,6 +18,7 @@ enum Token {
 #[derive(Debug, PartialEq)]
 enum Operator {
     Add,
+    Subtract,
     Multiply,
 }
 
@@ -30,7 +32,7 @@ struct BinExpr {
 #[derive(Debug, PartialEq)]
 enum Expr {
     Number(u64),
-    BinExprPtr(Box<BinExpr>)
+    BinExprPtr(Box<BinExpr>),
 }
 
 struct Tokenizer<'a> {
@@ -74,6 +76,7 @@ impl<'a> Tokenizer<'a> {
                 Token::Int(num)
             }
             b'+' => Token::Plus,
+            b'-' => Token::Minus,
             b'*' => Token::Asterisk,
             b'(' => Token::OpenParenthesis,
             b')' => Token::CloseParenthesis,
@@ -117,11 +120,12 @@ impl<'a> Tokenizer<'a> {
         let token = self.next_token();
         match token {
             Token::Plus => Operator::Add,
+            Token::Minus => Operator::Subtract,
             Token::Asterisk => Operator::Multiply,
             _ => {
                 panic!(
                     "
-            Expected token: \"Plus\" | \"Asterisk\"
+            Expected token: \"Plus\" | \"Minus\" | \"Asterisk\"
             Got instead: \"{:?}\"
             ",
                     token
@@ -168,7 +172,8 @@ fn main() {
 
     let mut input_buf = String::new();
     loop {
-        print!(">>> "); std::io::stdout().flush().unwrap();
+        print!(">>> ");
+        std::io::stdout().flush().unwrap();
         std::io::stdin().read_line(&mut input_buf).unwrap();
 
         let res = eval(&Tokenizer::new(&input_buf).parse_expression());
@@ -181,11 +186,10 @@ fn main() {
 fn eval(expr: &Expr) -> u64 {
     match expr {
         Expr::Number(n) => *n,
-        Expr::BinExprPtr(box expr) => {
-            match expr.op {
-                Operator::Add => eval(&expr.left) + eval(&expr.right),
-                Operator::Multiply => eval(&expr.left) * eval(&expr.right),
-            }
-        }
+        Expr::BinExprPtr(box expr) => match expr.op {
+            Operator::Add => eval(&expr.left) + eval(&expr.right),
+            Operator::Multiply => eval(&expr.left) * eval(&expr.right),
+            Operator::Subtract => eval(&expr.left) - eval(&expr.right),
+        },
     }
 }
