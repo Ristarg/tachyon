@@ -1,6 +1,15 @@
 use super::*;
 use std::iter;
 
+impl Lexer {
+    fn assert_tokens_eq(&mut self, tokens: &[Token]) {
+        tokens
+            .iter()
+            .zip(iter::repeat_with(|| self.next_token()))
+            .for_each(|(a, b)| assert_eq!(*a, b));
+    }
+}
+
 #[test]
 fn test_lexer_integers() {
     assert_eq!(
@@ -13,30 +22,40 @@ fn test_lexer_integers() {
 
 #[test]
 fn test_lexer_singletons() {
-    assert_eq!(Lexer::new("+").next_token(), Token::Plus);
-    assert_eq!(Lexer::new("-").next_token(), Token::Minus);
-    assert_eq!(Lexer::new("*").next_token(), Token::Asterisk);
-    assert_eq!(Lexer::new("(").next_token(), Token::OpenParenthesis);
-    assert_eq!(Lexer::new(")").next_token(), Token::CloseParenthesis);
+    Lexer::new("+-*()").assert_tokens_eq(&[
+        Token::Plus,
+        Token::Minus,
+        Token::Asterisk,
+        Token::OpenParenthesis,
+        Token::CloseParenthesis,
+    ]);
 }
 
 #[test]
 fn test_lexer_unknown_characters() {
-    assert_eq!(Lexer::new("a").next_token(), Token::Unknown('a'));
-    assert_eq!(Lexer::new("$").next_token(), Token::Unknown('$'));
+    Lexer::new("a$#~`").assert_tokens_eq(&[
+        Token::Unknown('a'),
+        Token::Unknown('$'),
+        Token::Unknown('#'),
+        Token::Unknown('~'),
+        Token::Unknown('`'),
+    ]);
+}
+
+#[test]
+fn test_lexer_with_spaces() {
+    Lexer::new(" \t\r\n ( 123 456 - 789 -789").assert_tokens_eq(&[
+        Token::OpenParenthesis,
+        Token::Int(123),
+        Token::Int(456),
+        Token::Minus,
+        Token::Int(789),
+        Token::Int(-789),
+    ]);
 }
 
 #[test]
 fn test_lexer_expressions() {
-    impl Lexer {
-        fn assert_tokens_eq(&mut self, tokens: &[Token]) {
-            tokens
-                .iter()
-                .zip(iter::repeat_with(|| self.next_token()))
-                .for_each(|(a, b)| assert_eq!(*a, b));
-        }
-    }
-
     Lexer::new("(+ 123 245)").assert_tokens_eq(&[
         Token::OpenParenthesis,
         Token::Plus,
@@ -65,5 +84,3 @@ fn test_lexer_expressions() {
         Token::CloseParenthesis,
     ]);
 }
-
-// #[test]
