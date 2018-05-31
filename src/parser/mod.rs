@@ -1,4 +1,4 @@
-use super::*;
+use lexer::*;
 
 #[cfg(test)]
 mod tests;
@@ -88,6 +88,7 @@ impl<'a> Parser<'a> {
     }
 }
 
+//TODO: move out
 pub fn eval(expr: &Expr) -> i64 {
     match expr {
         Expr::Number(n) => *n,

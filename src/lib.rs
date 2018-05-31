@@ -1,7 +1,6 @@
 #![feature(range_contains, box_patterns, iterator_repeat_with)]
 
-pub mod parser;
-pub mod lexer;
+mod parser;
+mod lexer;
 
-pub use parser::*;
-use lexer::*;
+pub use parser::{Parser, eval};
