@@ -65,7 +65,7 @@ impl Lexer {
         while let Token::Whitespace = self.next_token() {}
         self.rewind = true;
     }
-    
+
     fn cur_char(&self) -> u8 {
         self.source[self.idx]
     }

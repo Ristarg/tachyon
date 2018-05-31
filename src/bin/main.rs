@@ -1,7 +1,7 @@
 extern crate tachyon;
 
 use std::io::Write;
-use tachyon::*;
+use tachyon::prelude::*;
 
 fn main() {
     let mut input_buf = String::new();
@@ -10,7 +10,7 @@ fn main() {
         std::io::stdout().flush().unwrap();
         std::io::stdin().read_line(&mut input_buf).unwrap();
 
-        let res = eval(&Parser::new(&input_buf).parse_expression());
+        let res = eval(&input_buf);
 
         println!("{}", res);
         input_buf.clear();

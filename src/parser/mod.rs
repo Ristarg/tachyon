@@ -24,13 +24,13 @@ pub enum Operator {
 }
 
 pub struct Parser {
-    lexer: Lexer
+    lexer: Lexer,
 }
 
 impl Parser {
     pub fn new(source: &str) -> Parser {
         Parser {
-            lexer: Lexer::new(source)
+            lexer: Lexer::new(source),
         }
     }
 
@@ -49,7 +49,7 @@ impl Parser {
                 other
             ),
         }
-    }   
+    }
 
     fn parse_binary_expression(&mut self) -> BinExpr {
         let op = self.expect_operator();
@@ -85,17 +85,5 @@ impl Parser {
                 other
             ),
         }
-    }
-}
-
-//TODO: move out
-pub fn eval(expr: &Expr) -> i64 {
-    match expr {
-        Expr::Number(n) => *n,
-        Expr::BinExprPtr(box expr) => match expr.op {
-            Operator::Add => eval(&expr.left) + eval(&expr.right),
-            Operator::Multiply => eval(&expr.left) * eval(&expr.right),
-            Operator::Subtract => eval(&expr.left) - eval(&expr.right),
-        },
     }
 }
