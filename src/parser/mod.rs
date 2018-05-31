@@ -35,8 +35,6 @@ impl Parser {
     }
 
     pub fn parse_expression(&mut self) -> Expr {
-        self.lexer.skip_whitespace();
-
         match self.lexer.next_token() {
             Token::Int(i) => Expr::Number(i),
             Token::OpenParenthesis => {
@@ -53,19 +51,13 @@ impl Parser {
 
     fn parse_binary_expression(&mut self) -> BinExpr {
         let op = self.expect_operator();
-        self.expect_token(&Token::Whitespace);
         let left = self.parse_expression();
-        self.expect_token(&Token::Whitespace);
         let right = self.parse_expression();
 
         BinExpr { op, left, right }
     }
 
     fn expect_token(&mut self, expected: &Token) {
-        if *expected != Token::Whitespace {
-            self.lexer.skip_whitespace();
-        }
-
         let token = self.lexer.next_token();
         if token != *expected {
             panic!("Expected token: {:?}\nGot instead: {:?}", expected, token);
@@ -73,8 +65,6 @@ impl Parser {
     }
 
     fn expect_operator(&mut self) -> Operator {
-        self.lexer.skip_whitespace();
-
         match self.lexer.next_token() {
             //FIXME: this feels redundant
             Token::Plus => Operator::Add,

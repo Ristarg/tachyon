@@ -6,7 +6,6 @@ pub enum Token {
     Unknown(char),
     OpenParenthesis,
     CloseParenthesis,
-    Whitespace,
     Plus,
     Minus,
     Asterisk,
@@ -16,8 +15,6 @@ pub enum Token {
 pub struct Lexer {
     source: Vec<u8>,
     idx: usize,
-    last_token: Token,
-    rewind: bool,
 }
 
 impl Lexer {
@@ -25,15 +22,12 @@ impl Lexer {
         Lexer {
             source: source.to_owned().into_bytes(),
             idx: 0,
-            last_token: Token::Unknown('\0'),
-            rewind: false,
         }
     }
 
     pub fn next_token(&mut self) -> Token {
-        if self.rewind {
-            self.rewind = false;
-            return self.last_token;
+        while self.cur_char().is_ascii_whitespace() {
+            self.idx += 1;
         }
 
         let token = match self.cur_char() {
@@ -52,18 +46,11 @@ impl Lexer {
             b'*' => Token::Asterisk,
             b'(' => Token::OpenParenthesis,
             b')' => Token::CloseParenthesis,
-            b' ' => Token::Whitespace,
             other => Token::Unknown(other as char),
         };
 
         self.idx += 1;
-        self.last_token = token;
         token
-    }
-
-    pub fn skip_whitespace(&mut self) {
-        while let Token::Whitespace = self.next_token() {}
-        self.rewind = true;
     }
 
     fn cur_char(&self) -> u8 {

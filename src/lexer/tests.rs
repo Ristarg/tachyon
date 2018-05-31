@@ -18,7 +18,6 @@ fn test_lexer_singletons() {
     assert_eq!(Lexer::new("*").next_token(), Token::Asterisk);
     assert_eq!(Lexer::new("(").next_token(), Token::OpenParenthesis);
     assert_eq!(Lexer::new(")").next_token(), Token::CloseParenthesis);
-    assert_eq!(Lexer::new(" ").next_token(), Token::Whitespace);
 }
 
 #[test]
@@ -41,9 +40,7 @@ fn test_lexer_expressions() {
     Lexer::new("(+ 123 245)").assert_tokens_eq(&[
         Token::OpenParenthesis,
         Token::Plus,
-        Token::Whitespace,
         Token::Int(123),
-        Token::Whitespace,
         Token::Int(245),
         Token::CloseParenthesis,
     ]);
@@ -51,9 +48,7 @@ fn test_lexer_expressions() {
     Lexer::new("(* 398 4788)").assert_tokens_eq(&[
         Token::OpenParenthesis,
         Token::Asterisk,
-        Token::Whitespace,
         Token::Int(398),
-        Token::Whitespace,
         Token::Int(4788),
         Token::CloseParenthesis,
     ]);
@@ -61,15 +56,11 @@ fn test_lexer_expressions() {
     Lexer::new("(- (+ 98 4) 788)").assert_tokens_eq(&[
         Token::OpenParenthesis,
         Token::Minus,
-        Token::Whitespace,
         Token::OpenParenthesis,
         Token::Plus,
-        Token::Whitespace,
         Token::Int(98),
-        Token::Whitespace,
         Token::Int(4),
         Token::CloseParenthesis,
-        Token::Whitespace,
         Token::Int(788),
         Token::CloseParenthesis,
     ]);
