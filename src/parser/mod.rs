@@ -23,11 +23,11 @@ pub enum Operator {
     Multiply,
 }
 
-pub struct Parser<'a> {
-    lexer: Lexer<'a>
+pub struct Parser {
+    lexer: Lexer
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn new(source: &str) -> Parser {
         Parser {
             lexer: Lexer::new(source)

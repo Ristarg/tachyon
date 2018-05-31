@@ -13,17 +13,17 @@ pub enum Token {
     Int(i64),
 }
 
-pub struct Lexer<'a> {
-    source: &'a [u8],
+pub struct Lexer {
+    source: Vec<u8>,
     idx: usize,
     last_token: Token,
     rewind: bool,
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer {
     pub fn new(source: &str) -> Lexer {
         Lexer {
-            source: source.as_bytes(),
+            source: source.to_owned().into_bytes(),
             idx: 0,
             last_token: Token::Unknown('\0'),
             rewind: false,

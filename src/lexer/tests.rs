@@ -29,7 +29,7 @@ fn test_lexer_unknown_characters() {
 
 #[test]
 fn test_lexer_expressions() {
-    impl<'a> Lexer<'a> {
+    impl Lexer {
         fn assert_tokens_eq(&mut self, tokens: &[Token]) {
             tokens
                 .iter()

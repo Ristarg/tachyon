@@ -7,7 +7,7 @@ one the future.
 
 # Stuff to do (in no particular order)
 - [x] Test are broken, fix them and move out to a separate file
-- REFACTOR REFACTOR REFACTOR
+- [x] REFACTOR REFACTOR REFACTOR
 - [x] Would be nice to have some negative numbers, also subtraction
 - Floats? Also division
 - Powerrrr!! Actually, probably best to make it a function
