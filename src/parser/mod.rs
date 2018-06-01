@@ -12,7 +12,7 @@ pub struct BinExpr {
 
 #[derive(Debug, PartialEq)]
 pub enum Expr {
-    Number(i64),
+    Number(f64),
     BinExprPtr(Box<BinExpr>),
 }
 
@@ -36,7 +36,7 @@ impl Parser {
 
     pub fn parse_expression(&mut self) -> Expr {
         match self.lexer.next_token() {
-            Some(Token::Int(i)) => Expr::Number(i),
+            Some(Token::Number(i)) => Expr::Number(i),
             Some(Token::OpenParenthesis) => {
                 let expr = self.parse_binary_expression();
                 self.expect_token(&Token::CloseParenthesis);

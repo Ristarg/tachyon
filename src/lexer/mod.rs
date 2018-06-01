@@ -11,7 +11,7 @@ pub enum Token {
     Plus,
     Minus,
     Asterisk,
-    Int(i64),
+    Number(f64),
 }
 
 pub struct Lexer {
@@ -31,11 +31,11 @@ impl Lexer {
         match self.source.cur_char() {
             None => None,
             Some(c) => Some(match c {
-                b'0'...b'9' => Token::Int(self.read_uint()),
+                b'0'...b'9' => Token::Number(self.read_number()),
                 b'-' => {
                     self.source.advance();
                     match self.source.cur_char() {
-                        Some(b'0'...b'9') => Token::Int(-self.read_uint()),
+                        Some(b'0'...b'9') => Token::Number(-self.read_number()),
                         _ => Token::Minus,
                     }
                 }
@@ -64,13 +64,22 @@ impl Lexer {
         }
     }
 
-    // returns i64 to prevent overflow and extraneous casting, but only parses unsigned ints
-    fn read_uint(&mut self) -> i64 {
-        let mut num = 0;
+    fn read_number(&mut self) -> f64 {
+        let mut num = 0.0;
         while let Some(c @ b'0'...b'9') = self.source.cur_char() {
-            num *= 10;
-            num += i64::from(c - b'0');
+            num *= 10.0;
+            num += f64::from(c - b'0');
             self.source.advance();
+        }
+        //TODO: do I want to disallow representation like 1. ?
+        if let Some(b'.') = self.source.cur_char() {
+            self.source.advance();
+            let mut factor = 10.0;
+            while let Some(c @ b'0'...b'9') = self.source.cur_char() {
+                num += f64::from(c - b'0') / factor;
+                factor *= 10.0;
+                self.source.advance();
+            }   
         }
         num
     }

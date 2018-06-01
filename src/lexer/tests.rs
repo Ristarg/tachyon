@@ -14,12 +14,12 @@ impl Lexer {
 fn test_lexer_integers() {
     assert_eq!(
         Lexer::new("1234567890").next_token(),
-        Some(Token::Int(1234567890))
+        Some(Token::Number(1234567890.0))
     );
-    assert_eq!(Lexer::new("456456").next_token(), Some(Token::Int(456456)));
+    assert_eq!(Lexer::new("456456").next_token(), Some(Token::Number(456456.0)));
     assert_eq!(
         Lexer::new("-123132").next_token(),
-        Some(Token::Int(-123132))
+        Some(Token::Number(-123132.0))
     );
 }
 
@@ -49,11 +49,11 @@ fn test_lexer_unknown_characters() {
 fn test_lexer_with_spaces() {
     Lexer::new(" \t\r\n ( 123 456 - 789 -789").assert_tokens_eq(&[
         Token::OpenParenthesis,
-        Token::Int(123),
-        Token::Int(456),
+        Token::Number(123.0),
+        Token::Number(456.0),
         Token::Minus,
-        Token::Int(789),
-        Token::Int(-789),
+        Token::Number(789.0),
+        Token::Number(-789.0),
     ]);
 }
 
@@ -62,16 +62,16 @@ fn test_lexer_expressions() {
     Lexer::new("(+ 123 245)").assert_tokens_eq(&[
         Token::OpenParenthesis,
         Token::Plus,
-        Token::Int(123),
-        Token::Int(245),
+        Token::Number(123.0),
+        Token::Number(245.0),
         Token::CloseParenthesis,
     ]);
 
     Lexer::new("(* 398 4788)").assert_tokens_eq(&[
         Token::OpenParenthesis,
         Token::Asterisk,
-        Token::Int(398),
-        Token::Int(4788),
+        Token::Number(398.0),
+        Token::Number(4788.0),
         Token::CloseParenthesis,
     ]);
 
@@ -80,10 +80,10 @@ fn test_lexer_expressions() {
         Token::Minus,
         Token::OpenParenthesis,
         Token::Plus,
-        Token::Int(98),
-        Token::Int(4),
+        Token::Number(98.0),
+        Token::Number(4.0),
         Token::CloseParenthesis,
-        Token::Int(788),
+        Token::Number(788.0),
         Token::CloseParenthesis,
     ]);
 }
