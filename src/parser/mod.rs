@@ -21,6 +21,7 @@ pub enum Operator {
     Add,
     Subtract,
     Multiply,
+    Divide,
 }
 
 pub struct Parser {
@@ -70,6 +71,7 @@ impl Parser {
             Some(Token::Plus) => Operator::Add,
             Some(Token::Minus) => Operator::Subtract,
             Some(Token::Asterisk) => Operator::Multiply,
+            Some(Token::ForwardSlash) => Operator::Divide,
             other => panic!(
                 "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
                 other

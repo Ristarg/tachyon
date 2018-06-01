@@ -14,6 +14,7 @@ fn eval_expr(expr: &Expr) -> f64 {
             Operator::Add => eval_expr(&expr.left) + eval_expr(&expr.right),
             Operator::Multiply => eval_expr(&expr.left) * eval_expr(&expr.right),
             Operator::Subtract => eval_expr(&expr.left) - eval_expr(&expr.right),
+            Operator::Divide => eval_expr(&expr.left) / eval_expr(&expr.right),
         },
     }
 }

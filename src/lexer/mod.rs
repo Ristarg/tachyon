@@ -11,6 +11,7 @@ pub enum Token {
     Plus,
     Minus,
     Asterisk,
+    ForwardSlash,
     Number(f64),
 }
 
@@ -43,6 +44,7 @@ impl Lexer {
                     let ret = match other {
                         b'+' => Token::Plus,
                         b'*' => Token::Asterisk,
+                        b'/' => Token::ForwardSlash,
                         b'(' => Token::OpenParenthesis,
                         b')' => Token::CloseParenthesis,
                         other => Token::Unknown(other as char),
