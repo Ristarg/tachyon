@@ -1,3 +1,5 @@
+use source_stream::*;
+
 #[cfg(test)]
 mod tests;
 
@@ -10,37 +12,6 @@ pub enum Token {
     Minus,
     Asterisk,
     Int(i64),
-}
-
-struct SourceStream {
-    source: Vec<u8>,
-    idx: usize,
-}
-
-// this is literally a peekable iterator
-// I am literally retarded
-impl SourceStream {
-    fn new(source: &str) -> SourceStream {
-        let bytes = source.to_owned().into_bytes();
-        SourceStream {
-            source: bytes,
-            idx: 0,
-        }
-    }
-
-    fn cur_char(&self) -> Option<u8> {
-        if self.idx == self.source.len() {
-            return None;
-        }
-
-        Some(self.source[self.idx])
-    }
-
-    fn advance(&mut self) {
-        if self.idx < self.source.len() {
-            self.idx += 1;
-        }
-    }
 }
 
 pub struct Lexer {
