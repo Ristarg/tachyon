@@ -26,27 +26,21 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        while let Some(c) = self.source.cur_char() {
-            if !c.is_ascii_whitespace() {
-                break;
-            }
+        self.skip_whitespace();
 
-            self.source.advance();
-        }
-
-        if let Some(c) = self.source.cur_char() {
-            Some(match c {
+        match self.source.cur_char() {
+            None => None,
+            Some(c) => Some(match c {
                 b'0'...b'9' => Token::Int(self.read_uint()),
                 b'-' => {
                     self.source.advance();
-                    if let Some(b'0'...b'9') = self.source.cur_char() {
-                        Token::Int(-self.read_uint())
-                    } else {
-                        Token::Minus
+                    match self.source.cur_char() {
+                        Some(b'0'...b'9') => Token::Int(-self.read_uint()),
+                        _ => Token::Minus,
                     }
                 }
-                rest => {
-                    let ret = match rest {
+                other => {
+                    let ret = match other {
                         b'+' => Token::Plus,
                         b'*' => Token::Asterisk,
                         b'(' => Token::OpenParenthesis,
@@ -56,14 +50,23 @@ impl Lexer {
                     self.source.advance();
                     ret
                 }
-            })
-        } else {
-            None
+            }),
         }
     }
 
+    fn skip_whitespace(&mut self) {
+        while let Some(c) = self.source.cur_char() {
+            if !c.is_ascii_whitespace() {
+                break;
+            }
+
+            self.source.advance();
+        }
+    }
+
+    // returns i64 to prevent overflow and extraneous casting, but only parses unsigned ints
     fn read_uint(&mut self) -> i64 {
-        let mut num: i64 = 0;
+        let mut num = 0;
         while let Some(c @ b'0'...b'9') = self.source.cur_char() {
             num *= 10;
             num += i64::from(c - b'0');
