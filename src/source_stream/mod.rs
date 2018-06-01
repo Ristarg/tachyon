@@ -1,5 +1,5 @@
 pub struct SourceStream {
-    source: Vec<u8>,
+    source: Vec<char>,
     idx: usize,
 }
 
@@ -10,12 +10,13 @@ pub struct SourceStream {
 impl SourceStream {
     pub fn new(source: &str) -> SourceStream {
         SourceStream {
-            source: source.to_owned().into_bytes(),
+            //TODO: probably eventually better to keep an iterator from the original slice for perf reasons
+            source: source.chars().collect(),
             idx: 0,
         }
     }
 
-    pub fn cur_char(&self) -> Option<u8> {
+    pub fn cur_char(&self) -> Option<char> {
         if self.idx == self.source.len() {
             return None;
         }

@@ -32,21 +32,21 @@ impl Lexer {
         match self.source.cur_char() {
             None => None,
             Some(c) => Some(match c {
-                b'0'...b'9' => Token::Number(self.read_number()),
-                b'-' => {
+                '0'...'9' => Token::Number(self.read_number()),
+                '-' => {
                     self.source.advance();
                     match self.source.cur_char() {
-                        Some(b'0'...b'9') => Token::Number(-self.read_number()),
+                        Some('0'...'9') => Token::Number(-self.read_number()),
                         _ => Token::Minus,
                     }
                 }
                 other => {
                     let ret = match other {
-                        b'+' => Token::Plus,
-                        b'*' => Token::Asterisk,
-                        b'/' => Token::ForwardSlash,
-                        b'(' => Token::OpenParenthesis,
-                        b')' => Token::CloseParenthesis,
+                        '+' => Token::Plus,
+                        '*' => Token::Asterisk,
+                        '/' => Token::ForwardSlash,
+                        '(' => Token::OpenParenthesis,
+                        ')' => Token::CloseParenthesis,
                         other => Token::Unknown(other as char),
                     };
                     self.source.advance();
@@ -68,21 +68,26 @@ impl Lexer {
 
     fn read_number(&mut self) -> f64 {
         let mut num = 0.0;
-        while let Some(c @ b'0'...b'9') = self.source.cur_char() {
+
+        // read whole part
+        while let Some(c @ '0'...'9') = self.source.cur_char() {
             num *= 10.0;
-            num += f64::from(c - b'0');
+            num += f64::from(c.to_digit(10).unwrap());
             self.source.advance();
         }
+
         //TODO: do I want to disallow representation like 1. ?
-        if let Some(b'.') = self.source.cur_char() {
+        // read fractional part
+        if let Some('.') = self.source.cur_char() {
             self.source.advance();
             let mut factor = 10.0;
-            while let Some(c @ b'0'...b'9') = self.source.cur_char() {
-                num += f64::from(c - b'0') / factor;
+            while let Some(c @ '0'...'9') = self.source.cur_char() {
+                num += f64::from(c.to_digit(10).unwrap()) / factor;
                 factor *= 10.0;
                 self.source.advance();
-            }   
+            }
         }
+
         num
     }
 }

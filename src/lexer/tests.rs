@@ -16,7 +16,10 @@ fn test_lexer_integers() {
         Lexer::new("1234567890").next_token(),
         Some(Token::Number(1234567890.0))
     );
-    assert_eq!(Lexer::new("456456").next_token(), Some(Token::Number(456456.0)));
+    assert_eq!(
+        Lexer::new("456456").next_token(),
+        Some(Token::Number(456456.0))
+    );
     assert_eq!(
         Lexer::new("-123132").next_token(),
         Some(Token::Number(-123132.0))
