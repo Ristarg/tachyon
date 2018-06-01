@@ -8,10 +8,7 @@ pub enum Token {
     Unknown(char),
     OpenParenthesis,
     CloseParenthesis,
-    Plus,
-    Minus,
-    Asterisk,
-    ForwardSlash,
+    Identifier(char),
     Number(f64),
 }
 
@@ -29,22 +26,19 @@ impl Lexer {
     pub fn next_token(&mut self) -> Option<Token> {
         self.skip_whitespace();
 
-        match self.source.cur_char() {
-            None => None,
-            Some(c) => Some(match c {
+        self.source.cur_char().and_then(|c| {
+            Some(match c {
                 '0'...'9' => Token::Number(self.read_number()),
                 '-' => {
                     self.source.advance();
                     match self.source.cur_char() {
                         Some('0'...'9') => Token::Number(-self.read_number()),
-                        _ => Token::Minus,
+                        _ => Token::Identifier('-'),
                     }
                 }
                 other => {
                     let ret = match other {
-                        '+' => Token::Plus,
-                        '*' => Token::Asterisk,
-                        '/' => Token::ForwardSlash,
+                        '+' | '*' | '/' => Token::Identifier(other),
                         '(' => Token::OpenParenthesis,
                         ')' => Token::CloseParenthesis,
                         other => Token::Unknown(other as char),
@@ -52,13 +46,13 @@ impl Lexer {
                     self.source.advance();
                     ret
                 }
-            }),
-        }
+            })
+        })
     }
 
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.source.cur_char() {
-            if !c.is_ascii_whitespace() {
+            if !c.is_whitespace() {
                 break;
             }
 
