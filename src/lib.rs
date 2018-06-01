@@ -1,4 +1,4 @@
-#![feature(range_contains, box_patterns, iterator_repeat_with)]
+#![feature(box_patterns, iterator_repeat_with)]
 
 mod interpreter;
 mod lexer;
