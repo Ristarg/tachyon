@@ -36,8 +36,8 @@ impl Parser {
 
     pub fn parse_expression(&mut self) -> Expr {
         match self.lexer.next_token() {
-            Token::Int(i) => Expr::Number(i),
-            Token::OpenParenthesis => {
+            Some(Token::Int(i)) => Expr::Number(i),
+            Some(Token::OpenParenthesis) => {
                 let expr = self.parse_binary_expression();
                 self.expect_token(&Token::CloseParenthesis);
                 Expr::BinExprPtr(Box::new(expr))
@@ -59,7 +59,7 @@ impl Parser {
 
     fn expect_token(&mut self, expected: &Token) {
         let token = self.lexer.next_token();
-        if token != *expected {
+        if token != Some(*expected) {
             panic!("Expected token: {:?}\nGot instead: {:?}", expected, token);
         }
     }
@@ -67,9 +67,9 @@ impl Parser {
     fn expect_operator(&mut self) -> Operator {
         match self.lexer.next_token() {
             //FIXME: this feels redundant
-            Token::Plus => Operator::Add,
-            Token::Minus => Operator::Subtract,
-            Token::Asterisk => Operator::Multiply,
+            Some(Token::Plus) => Operator::Add,
+            Some(Token::Minus) => Operator::Subtract,
+            Some(Token::Asterisk) => Operator::Multiply,
             other => panic!(
                 "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
                 other

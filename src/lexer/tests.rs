@@ -6,7 +6,7 @@ impl Lexer {
         tokens
             .iter()
             .zip(iter::repeat_with(|| self.next_token()))
-            .for_each(|(a, b)| assert_eq!(*a, b));
+            .for_each(|(a, b)| assert_eq!(Some(*a), b));
     }
 }
 
@@ -14,10 +14,13 @@ impl Lexer {
 fn test_lexer_integers() {
     assert_eq!(
         Lexer::new("1234567890").next_token(),
-        Token::Int(1234567890)
+        Some(Token::Int(1234567890))
     );
-    assert_eq!(Lexer::new("456456").next_token(), Token::Int(456456));
-    assert_eq!(Lexer::new("-123132").next_token(), Token::Int(-123132));
+    assert_eq!(Lexer::new("456456").next_token(), Some(Token::Int(456456)));
+    assert_eq!(
+        Lexer::new("-123132").next_token(),
+        Some(Token::Int(-123132))
+    );
 }
 
 #[test]

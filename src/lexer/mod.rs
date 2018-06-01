@@ -12,59 +12,92 @@ pub enum Token {
     Int(i64),
 }
 
-pub struct Lexer {
+struct SourceStream {
     source: Vec<u8>,
     idx: usize,
+}
+
+// this is literally a peekable iterator
+// I am literally retarded
+impl SourceStream {
+    fn new(source: &str) -> SourceStream {
+        let bytes = source.to_owned().into_bytes();
+        SourceStream {
+            source: bytes,
+            idx: 0,
+        }
+    }
+
+    fn cur_char(&self) -> Option<u8> {
+        if self.idx == self.source.len() {
+            return None;
+        }
+
+        Some(self.source[self.idx])
+    }
+
+    fn advance(&mut self) {
+        if self.idx < self.source.len() {
+            self.idx += 1;
+        }
+    }
+}
+
+pub struct Lexer {
+    source: SourceStream,
 }
 
 impl Lexer {
     pub fn new(source: &str) -> Lexer {
         Lexer {
-            source: source.to_owned().into_bytes(),
-            idx: 0,
+            source: SourceStream::new(source),
         }
     }
 
-    pub fn next_token(&mut self) -> Token {
-        while self.cur_char().is_ascii_whitespace() {
-            self.idx += 1;
-        }
-
-        let token = match self.cur_char() {
-            b'0'...b'9' => Token::Int(self.read_uint()),
-            b'-' => {
-                if self.idx + 1 < self.source.len()
-                    && (b'0'..=b'9').contains(&self.source[self.idx + 1])
-                {
-                    self.idx += 1;
-                    Token::Int(-self.read_uint())
-                } else {
-                    Token::Minus
-                }
+    pub fn next_token(&mut self) -> Option<Token> {
+        while let Some(c) = self.source.cur_char() {
+            if !c.is_ascii_whitespace() {
+                break;
             }
-            b'+' => Token::Plus,
-            b'*' => Token::Asterisk,
-            b'(' => Token::OpenParenthesis,
-            b')' => Token::CloseParenthesis,
-            other => Token::Unknown(other as char),
-        };
 
-        self.idx += 1;
-        token
-    }
+            self.source.advance();
+        }
 
-    fn cur_char(&self) -> u8 {
-        self.source[self.idx]
+        if let Some(c) = self.source.cur_char() {
+            Some(match c {
+                b'0'...b'9' => Token::Int(self.read_uint()),
+                b'-' => {
+                    self.source.advance();
+                    if let Some(b'0'...b'9') = self.source.cur_char() {
+                        Token::Int(-self.read_uint())
+                    } else {
+                        Token::Minus
+                    }
+                }
+                rest => {
+                    let ret = match rest {
+                        b'+' => Token::Plus,
+                        b'*' => Token::Asterisk,
+                        b'(' => Token::OpenParenthesis,
+                        b')' => Token::CloseParenthesis,
+                        other => Token::Unknown(other as char),
+                    };
+                    self.source.advance();
+                    ret
+                }
+            })
+        } else {
+            None
+        }
     }
 
     fn read_uint(&mut self) -> i64 {
         let mut num: i64 = 0;
-        while self.idx < self.source.len() && (b'0'..=b'9').contains(&self.cur_char()) {
+        while let Some(c @ b'0'...b'9') = self.source.cur_char() {
             num *= 10;
-            num += i64::from(self.cur_char() - b'0');
-            self.idx += 1;
+            num += i64::from(c - b'0');
+            self.source.advance();
         }
-        self.idx -= 1;
         num
     }
 }
