@@ -1,7 +1,19 @@
+use std;
 use lexer::*;
 
 #[cfg(test)]
 mod tests;
+
+macro_rules! syntax_error {
+    ($fmt:expr) => ({
+        eprintln!($fmt);
+        std::process::exit(1)
+    });
+    ($fmt:expr, $($arg:tt)*) => ({
+        eprintln!($fmt, $($arg)*);
+        std::process::exit(1)
+    });
+}
 
 #[derive(Debug, PartialEq)]
 pub struct BinExpr {
@@ -43,7 +55,7 @@ impl Parser {
                 self.expect_token(&Token::CloseParenthesis);
                 Expr::BinExprPtr(Box::new(expr))
             }
-            other => panic!(
+            other => syntax_error!(
                 "Expected token: Int | OpenParenthesis\nGot instead: {:?}",
                 other
             ),
@@ -61,7 +73,7 @@ impl Parser {
     fn expect_token(&mut self, expected: &Token) {
         let token = self.lexer.next_token();
         if token != Some(*expected) {
-            panic!("Expected token: {:?}\nGot instead: {:?}", expected, token);
+            syntax_error!("Expected token: {:?}\nGot instead: {:?}", expected, token);
         }
     }
 
@@ -72,7 +84,7 @@ impl Parser {
             Some(Token::Identifier('-')) => Operator::Subtract,
             Some(Token::Identifier('*')) => Operator::Multiply,
             Some(Token::Identifier('/')) => Operator::Divide,
-            other => panic!(
+            other => syntax_error!(
                 "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
                 other
             ),
