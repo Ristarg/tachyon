@@ -16,16 +16,15 @@ macro_rules! syntax_error {
 pub struct Identifier(pub String);
 
 #[derive(Debug, PartialEq)]
-pub struct BinExpr {
+pub struct FnExpr {
     pub op: Identifier,
-    pub left: Expr,
-    pub right: Expr,
+    pub args: Vec<Expr>,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Expr {
     Number(f64),
-    BinExprPtr(Box<BinExpr>),
+    FnExprPtr(Box<FnExpr>),
 }
 
 pub struct Parser {
@@ -43,9 +42,8 @@ impl Parser {
         match self.lexer.next_token() {
             Some(Token::NumberLiteral(i)) => Expr::Number(i),
             Some(Token::OpenParenthesis) => {
-                let expr = self.parse_binary_expression();
-                self.expect_token(Token::CloseParenthesis);
-                Expr::BinExprPtr(Box::new(expr))
+                let expr = self.parse_fn_expression();
+                Expr::FnExprPtr(Box::new(expr))
             }
             other => syntax_error!(
                 "Expected token: NumberLiteral | OpenParenthesis\nGot instead: {:?}",
@@ -54,12 +52,19 @@ impl Parser {
         }
     }
 
-    fn parse_binary_expression(&mut self) -> BinExpr {
+    fn parse_fn_expression(&mut self) -> FnExpr {
         let op = self.expect_identifier();
-        let left = self.parse_expression();
-        let right = self.parse_expression();
+        let mut args = vec![];
+        while let Some(t) = self.lexer.next_token() {
+            match t {
+                Token::NumberLiteral(n) => args.push(Expr::Number(n)),
+                Token::OpenParenthesis => args.push(Expr::FnExprPtr(Box::new(self.parse_fn_expression()))),
+                Token::CloseParenthesis => break,
+                other => syntax_error!("unexpected token: {:?}", other)
+            }
+        }
 
-        BinExpr { op, left, right }
+        FnExpr { op, args }
     }
 
     fn expect_token(&mut self, expected: Token) {

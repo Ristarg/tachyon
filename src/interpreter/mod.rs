@@ -31,11 +31,8 @@ pub fn eval(source: &str) -> f64 {
 fn eval_expr(expr: &Expr, ctx: &HashMap<String, Box<FnBin>>) -> f64 {
     match expr {
         Expr::Number(n) => *n,
-        Expr::BinExprPtr(box expr) => match ctx.get(&expr.op.0) {
-            Some(fnbin) => fnbin(vec![
-                eval_expr(&expr.left, &ctx),
-                eval_expr(&expr.right, &ctx),
-            ]),
+        Expr::FnExprPtr(box expr) => match ctx.get(&expr.op.0) {
+            Some(fnbin) => fnbin(expr.args.iter().map(|a| eval_expr(a, &ctx)).collect()),
             None => panic!("no such function: \"{}\"", &expr.op.0),
         },
     }

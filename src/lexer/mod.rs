@@ -87,7 +87,7 @@ impl Lexer {
     fn read_identifier(&mut self) -> String {
         let mut chars = vec![];
         while let Some(c) = self.source.cur_char() {
-            if c.is_whitespace() {
+            if c.is_whitespace() || c == ')' {
                 break;
             }
 
