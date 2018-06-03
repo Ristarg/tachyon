@@ -31,13 +31,28 @@ impl Parser {
         }
     }
 
-    pub fn parse_expression(&mut self) -> Option<Expr> {
-        self.lexer.next_token().and_then(|t| match t {
-            Token::NumberLiteral(i) => Some(Expr::Number(i)),
-            Token::OpenParenthesis => Some(Expr::FnExprPtr(Box::new(self.parse_fn_expression()))),
-            Token::CloseParenthesis => None, //FIXME: "(pi))))))))))" doesn't raise any error
+    pub fn parse_all(&mut self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        loop {
+            match self.parse_expression() {
+                Ok(Some(expr)) => exprs.push(expr),
+                Ok(None) => error!("unexpected closing delimiter"),
+                Err(_) => break
+            }
+        }
+        exprs
+    }
+
+    pub fn parse_expression(&mut self) -> Result<Option<Expr>, ()> {
+        match self.lexer.next_token() {
+            Some(Token::NumberLiteral(i)) => Ok(Some(Expr::Number(i))),
+            Some(Token::OpenParenthesis) => {
+                Ok(Some(Expr::FnExprPtr(Box::new(self.parse_fn_expression()))))
+            }
+            Some(Token::CloseParenthesis) => Ok(None),
+            None => Err(()),
             other => error!("Unexpected token: {:?}", other),
-        })
+        }
     }
 
     fn parse_fn_expression(&mut self) -> FnExpr {
@@ -47,8 +62,12 @@ impl Parser {
         };
 
         let mut args = vec![];
-        while let Some(t) = self.parse_expression() {
-            args.push(t);
+        loop {
+            match self.parse_expression() {
+                Ok(Some(t)) => args.push(t),
+                Ok(None) => break,
+                Err(_) => error!("missing closing delimiter"),
+            }
         }
 
         FnExpr { op, args }

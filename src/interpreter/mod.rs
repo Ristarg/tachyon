@@ -14,7 +14,7 @@ macro_rules! context {
     });
 }
 
-pub fn eval(source: &str) -> Option<f64> {
+pub fn eval(source: &str) -> Vec<f64> {
     let ctx = context!{
         "+"  => |argv| argv.iter().fold(0.0, |acc, x| acc + x),
         "-"  => |argv| argv.iter().fold(0.0, |acc, x| acc - x),
@@ -25,8 +25,8 @@ pub fn eval(source: &str) -> Option<f64> {
     };
 
     Parser::new(source)
-        .parse_expression()
-        .and_then(|e| Some(eval_expr(&e, &ctx)))
+        .parse_all().iter().map(|e| eval_expr(&e, &ctx)).collect()
+        // .and_then(|e| Some(eval_expr(&e, &ctx)))
 }
 
 fn eval_expr(expr: &Expr, ctx: &HashMap<String, Box<FnVec>>) -> f64 {
