@@ -40,7 +40,7 @@ impl Parser {
             Some(Token::Number(i)) => Expr::Number(i),
             Some(Token::OpenParenthesis) => {
                 let expr = self.parse_binary_expression();
-                self.expect_token(&Token::CloseParenthesis);
+                self.expect_token(Token::CloseParenthesis);
                 Expr::BinExprPtr(Box::new(expr))
             }
             other => syntax_error!(
@@ -58,9 +58,9 @@ impl Parser {
         BinExpr { op, left, right }
     }
 
-    fn expect_token(&mut self, expected: &Token) {
+    fn expect_token(&mut self, expected: Token) {
         let token = self.lexer.next_token();
-        if token != Some(*expected) {
+        if token != Some(expected.clone()) {
             syntax_error!("Expected token: {:?}\nGot instead: {:?}", expected, token);
         }
     }

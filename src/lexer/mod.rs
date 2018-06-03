@@ -1,14 +1,14 @@
 use source_stream::*;
+use std::iter::FromIterator;
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
-    Unknown(char),
     OpenParenthesis,
     CloseParenthesis,
-    Identifier(&'static str),
+    Identifier(String),
     Number(f64),
 }
 
@@ -33,17 +33,14 @@ impl Lexer {
                     self.source.advance();
                     match self.source.cur_char() {
                         Some('0'...'9') => Token::Number(-self.read_number()),
-                        _ => Token::Identifier("-"),
+                        _ => Token::Identifier("-".to_owned()), //TODO: read ident
                     }
                 }
                 other => {
                     let ret = match other {
-                        '+' => Token::Identifier("+"),
-                        '*' => Token::Identifier("*"),
-                        '/' => Token::Identifier("/"),
                         '(' => Token::OpenParenthesis,
                         ')' => Token::CloseParenthesis,
-                        other => Token::Unknown(other as char),
+                        _ => Token::Identifier(self.read_identifier()),
                     };
                     self.source.advance();
                     ret
@@ -85,5 +82,19 @@ impl Lexer {
         }
 
         num
+    }
+
+    fn read_identifier(&mut self) -> String {
+        let mut chars = vec![];
+        while let Some(c) = self.source.cur_char() {
+            if c.is_whitespace() {
+                break;
+            }
+
+            chars.push(c);
+            self.source.advance();
+        }
+
+        String::from_iter(chars)
     }
 }
