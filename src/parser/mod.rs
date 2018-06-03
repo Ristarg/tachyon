@@ -1,16 +1,12 @@
-use std;
 use lexer::*;
+use std;
 
 #[cfg(test)]
 mod tests;
 
 macro_rules! syntax_error {
-    ($fmt:expr) => ({
-        eprintln!($fmt);
-        std::process::exit(1)
-    });
-    ($fmt:expr, $($arg:tt)*) => ({
-        eprintln!($fmt, $($arg)*);
+    ($($tt:tt)*) => ({
+        eprintln!($($tt)*);
         std::process::exit(1)
     });
 }
