@@ -9,7 +9,7 @@ pub enum Token {
     OpenParenthesis,
     CloseParenthesis,
     Identifier(String),
-    Number(f64),
+    NumberLiteral(f64),
 }
 
 pub struct Lexer {
@@ -28,23 +28,23 @@ impl Lexer {
 
         self.source.cur_char().and_then(|c| {
             Some(match c {
-                '0'...'9' => Token::Number(self.read_number()),
+                '0'...'9' => Token::NumberLiteral(self.read_number()),
                 '-' => {
                     self.source.advance();
                     match self.source.cur_char() {
-                        Some('0'...'9') => Token::Number(-self.read_number()),
-                        _ => Token::Identifier("-".to_owned()), //TODO: read ident
+                        Some('0'...'9') => Token::NumberLiteral(-self.read_number()),
+                        _ => Token::Identifier("-".to_owned() + &self.read_identifier()),
                     }
                 }
-                other => {
-                    let ret = match other {
-                        '(' => Token::OpenParenthesis,
-                        ')' => Token::CloseParenthesis,
-                        _ => Token::Identifier(self.read_identifier()),
-                    };
+                '(' => {
                     self.source.advance();
-                    ret
+                    Token::OpenParenthesis
                 }
+                ')' => {
+                    self.source.advance();
+                    Token::CloseParenthesis
+                }
+                _ => Token::Identifier(self.read_identifier()),
             })
         })
     }

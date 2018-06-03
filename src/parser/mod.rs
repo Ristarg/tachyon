@@ -11,9 +11,13 @@ macro_rules! syntax_error {
     });
 }
 
+/// Wrapper over enum identifier variant for better type checking.
+#[derive(Debug, PartialEq)]
+pub struct Identifier(pub String);
+
 #[derive(Debug, PartialEq)]
 pub struct BinExpr {
-    pub op: Token,
+    pub op: Identifier,
     pub left: Expr,
     pub right: Expr,
 }
@@ -37,14 +41,14 @@ impl Parser {
 
     pub fn parse_expression(&mut self) -> Expr {
         match self.lexer.next_token() {
-            Some(Token::Number(i)) => Expr::Number(i),
+            Some(Token::NumberLiteral(i)) => Expr::Number(i),
             Some(Token::OpenParenthesis) => {
                 let expr = self.parse_binary_expression();
                 self.expect_token(Token::CloseParenthesis);
                 Expr::BinExprPtr(Box::new(expr))
             }
             other => syntax_error!(
-                "Expected token: Int | OpenParenthesis\nGot instead: {:?}",
+                "Expected token: NumberLiteral | OpenParenthesis\nGot instead: {:?}",
                 other
             ),
         }
@@ -65,12 +69,12 @@ impl Parser {
         }
     }
 
-    fn expect_identifier(&mut self) -> Token {
+    fn expect_identifier(&mut self) -> Identifier {
         match self.lexer.next_token() {
             //FIXME: this feels redundant
-            Some(id @ Token::Identifier(_)) => id,
+            Some(Token::Identifier(id)) => Identifier(id),
             other => syntax_error!(
-                "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
+                "Expected identifier\nGot instead: {:?}",
                 other
             ),
         }
