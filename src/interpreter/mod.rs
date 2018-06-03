@@ -16,7 +16,7 @@ macro_rules! context {
     });
 }
 
-pub fn eval(source: &str) -> f64 {
+pub fn eval(source: &str) -> Option<f64> {
     let ctx = context!{
         "+"    => |argv| argv[0] + argv[1],
         "-"    => |argv| argv[0] - argv[1],
@@ -25,7 +25,9 @@ pub fn eval(source: &str) -> f64 {
         "test" => |_| 69.1337
     };
 
-    eval_expr(&Parser::new(source).parse_expression(), &ctx)
+    Parser::new(source)
+        .parse_expression()
+        .and_then(|e| Some(eval_expr(&e, &ctx)))
 }
 
 fn eval_expr(expr: &Expr, ctx: &HashMap<String, Box<FnBin>>) -> f64 {

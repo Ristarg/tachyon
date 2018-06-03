@@ -38,47 +38,26 @@ impl Parser {
         }
     }
 
-    pub fn parse_expression(&mut self) -> Expr {
-        match self.lexer.next_token() {
-            Some(Token::NumberLiteral(i)) => Expr::Number(i),
-            Some(Token::OpenParenthesis) => {
-                let expr = self.parse_fn_expression();
-                Expr::FnExprPtr(Box::new(expr))
-            }
-            other => syntax_error!(
-                "Expected token: NumberLiteral | OpenParenthesis\nGot instead: {:?}",
-                other
-            ),
-        }
+    pub fn parse_expression(&mut self) -> Option<Expr> {
+        self.lexer.next_token().and_then(|t| match t {
+            Token::NumberLiteral(i) => Some(Expr::Number(i)),
+            Token::OpenParenthesis => Some(Expr::FnExprPtr(Box::new(self.parse_fn_expression()))),
+            Token::CloseParenthesis => None,
+            other => syntax_error!("unexpected token: {:?}", other),
+        })
     }
 
     fn parse_fn_expression(&mut self) -> FnExpr {
-        let op = self.expect_identifier();
+        let op = match self.lexer.next_token() {
+            Some(Token::Identifier(id)) => Identifier(id),
+            other => syntax_error!("Expected identifier\nGot instead: {:?}", other),
+        };
+
         let mut args = vec![];
-        while let Some(t) = self.lexer.next_token() {
-            match t {
-                Token::NumberLiteral(n) => args.push(Expr::Number(n)),
-                Token::OpenParenthesis => args.push(Expr::FnExprPtr(Box::new(self.parse_fn_expression()))),
-                Token::CloseParenthesis => break,
-                other => syntax_error!("unexpected token: {:?}", other)
-            }
+        while let Some(t) = self.parse_expression() {
+            args.push(t);
         }
 
         FnExpr { op, args }
-    }
-
-    fn expect_token(&mut self, expected: Token) {
-        let token = self.lexer.next_token();
-        if token != Some(expected.clone()) {
-            syntax_error!("Expected token: {:?}\nGot instead: {:?}", expected, token);
-        }
-    }
-
-    fn expect_identifier(&mut self) -> Identifier {
-        match self.lexer.next_token() {
-            //FIXME: this feels redundant
-            Some(Token::Identifier(id)) => Identifier(id),
-            other => syntax_error!("Expected identifier\nGot instead: {:?}", other),
-        }
     }
 }
