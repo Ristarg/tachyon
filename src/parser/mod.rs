@@ -13,7 +13,7 @@ macro_rules! syntax_error {
 
 #[derive(Debug, PartialEq)]
 pub struct BinExpr {
-    pub op: Operator,
+    pub op: Token,
     pub left: Expr,
     pub right: Expr,
 }
@@ -22,14 +22,6 @@ pub struct BinExpr {
 pub enum Expr {
     Number(f64),
     BinExprPtr(Box<BinExpr>),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Operator {
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
 }
 
 pub struct Parser {
@@ -59,7 +51,7 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self) -> BinExpr {
-        let op = self.expect_operator();
+        let op = self.expect_identifier();
         let left = self.parse_expression();
         let right = self.parse_expression();
 
@@ -73,13 +65,10 @@ impl Parser {
         }
     }
 
-    fn expect_operator(&mut self) -> Operator {
+    fn expect_identifier(&mut self) -> Token {
         match self.lexer.next_token() {
             //FIXME: this feels redundant
-            Some(Token::Identifier('+')) => Operator::Add,
-            Some(Token::Identifier('-')) => Operator::Subtract,
-            Some(Token::Identifier('*')) => Operator::Multiply,
-            Some(Token::Identifier('/')) => Operator::Divide,
+            Some(id @ Token::Identifier(_)) => id,
             other => syntax_error!(
                 "Expected token: Plus | Minus | Asterisk\nGot instead: {:?}",
                 other

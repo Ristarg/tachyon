@@ -8,7 +8,7 @@ pub enum Token {
     Unknown(char),
     OpenParenthesis,
     CloseParenthesis,
-    Identifier(char),
+    Identifier(&'static str),
     Number(f64),
 }
 
@@ -33,12 +33,14 @@ impl Lexer {
                     self.source.advance();
                     match self.source.cur_char() {
                         Some('0'...'9') => Token::Number(-self.read_number()),
-                        _ => Token::Identifier('-'),
+                        _ => Token::Identifier("-"),
                     }
                 }
                 other => {
                     let ret = match other {
-                        '+' | '*' | '/' => Token::Identifier(other),
+                        '+' => Token::Identifier("+"),
+                        '*' => Token::Identifier("*"),
+                        '/' => Token::Identifier("/"),
                         '(' => Token::OpenParenthesis,
                         ')' => Token::CloseParenthesis,
                         other => Token::Unknown(other as char),
