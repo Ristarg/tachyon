@@ -32,7 +32,10 @@ fn eval_expr(expr: &Expr, ctx: &HashMap<String, Box<FnBin>>) -> f64 {
     match expr {
         Expr::Number(n) => *n,
         Expr::BinExprPtr(box expr) => match ctx.get(&expr.op.0) {
-            Some(fnbin) => fnbin(vec![eval_expr(&expr.left, &ctx), eval_expr(&expr.right, &ctx)]),
+            Some(fnbin) => fnbin(vec![
+                eval_expr(&expr.left, &ctx),
+                eval_expr(&expr.right, &ctx),
+            ]),
             None => panic!("no such function: \"{}\"", &expr.op.0),
         },
     }

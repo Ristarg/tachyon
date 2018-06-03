@@ -7,7 +7,7 @@ mod tests;
 macro_rules! syntax_error {
     ($($tt:tt)*) => ({
         eprintln!($($tt)*);
-        std::process::exit(1)
+        std::process::exit(1);
     });
 }
 
@@ -73,10 +73,7 @@ impl Parser {
         match self.lexer.next_token() {
             //FIXME: this feels redundant
             Some(Token::Identifier(id)) => Identifier(id),
-            other => syntax_error!(
-                "Expected identifier\nGot instead: {:?}",
-                other
-            ),
+            other => syntax_error!("Expected identifier\nGot instead: {:?}", other),
         }
     }
 }
