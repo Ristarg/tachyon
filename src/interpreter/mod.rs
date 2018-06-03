@@ -34,7 +34,7 @@ fn eval_expr(expr: &Expr, ctx: &HashMap<String, Box<FnVec>>) -> f64 {
         Expr::Number(n) => *n,
         Expr::FnExprPtr(box expr) => match ctx.get(&expr.op.0) {
             Some(func) => func(expr.args.iter().map(|a| eval_expr(a, &ctx)).collect()),
-            None => panic!("no such function: \"{}\"", &expr.op.0),
+            None => error!("no such function: \"{}\"", &expr.op.0),
         },
     }
 }
