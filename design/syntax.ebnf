@@ -1,5 +1,9 @@
 digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-number = ["-"], digit, { digit } ;
-operator = "+" | "*" | "-" ;
-binexpr = operator, " ", expr, " ", expr ;
-expr = number | "(", binexpr, ")" ;
+sign = "-";
+unsigned_integer = digit, { digit } ;
+signed_integer = [ sign ], unsigned_integer ;
+float = signed_integer, ".", unsigned_integer ;
+number = signed_integer | float ;
+(*identifier = pretty much every other character ; *)
+fn_expr = operator, " ", expr, " ", expr ;
+expr = number | "(", fn_expr, ")" ;
